@@ -1,3 +1,5 @@
 /target
 Cargo.lock
 /.idea
+/www/wasm_sample.js
+/www/wasm_sample_bg.wasm
