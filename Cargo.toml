@@ -1,0 +1,50 @@
+[package]
+name = "wasm_sample"
+version = "0.1.0"
+edition = "2018"
+resolver = "2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-bindgen = "0.2.78"
+js-sys = "0.3.55"
+winit = { version = "0.25.0", features = ['web-sys'] }
+
+[dependencies.web-sys]
+version = "0.3.55"
+features = [
+  'CanvasRenderingContext2d',
+  'Document',
+  'Element',
+  'HtmlCanvasElement',
+  'console',
+  'AddEventListenerOptions',
+  'CssStyleDeclaration',
+  'BeforeUnloadEvent',
+  'DomRect',
+  'Event',
+  'EventTarget',
+  'FocusEvent',
+  'HtmlElement',
+  'KeyboardEvent',
+  'MediaQueryList',
+  'MediaQueryListEvent',
+  'MouseEvent',
+  'Node',
+  'PointerEvent',
+  'Window',
+  'WheelEvent',
+  'WebGlBuffer',
+  'WebGlVertexArrayObject',
+  'WebGl2RenderingContext',
+  'WebGlProgram',
+  'WebGlShader',
+  'WebGlTexture',
+  'WebGlSampler',
+  'WebGlUniformLocation',
+  'Screen',
+]
