@@ -1,6 +1,9 @@
 mod web_gl;
+mod color;
 
 use web_gl::WebGLContext;
+use color::Color;
+
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use winit::{
@@ -41,7 +44,7 @@ pub fn main() -> Result<(), JsValue> {
     context.bind_all_objects();
 
     event_loop.run(move |event, _, control_flow| {
-        *control_flow = ControlFlow::Wait;
+        // *control_flow = ControlFlow::Wait;
 
         match event {
             Event::WindowEvent {
@@ -63,14 +66,13 @@ pub fn main() -> Result<(), JsValue> {
                     context.resize(new_width as i32, new_height as i32);
                     width = new_width;
                     height = new_height;
-                    log(&format!("Resized to: {}, {}", width, height));
                 }
 
-                let texture = [
-                    0, 0, 0, 255, 255, 255,
-                    255, 255, 255, 0, 0, 0,
-                ];
-                context.update_texture(&texture, 2, 2).unwrap();
+                let texture = bytemuck::cast_slice(&[
+                    Color::MAGENTA, Color::YELLOW,
+                    Color::YELLOW, Color::MAGENTA,
+                ]);
+                context.update_texture(texture, 2, 2).unwrap();
                 context.draw();
             }
             _ => (),
