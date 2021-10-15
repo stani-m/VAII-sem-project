@@ -1,5 +1,6 @@
 mod web_gl;
 mod color;
+mod logging;
 
 use web_gl::WebGLContext;
 use color::Color;
@@ -13,12 +14,6 @@ use winit::{
     dpi::PhysicalSize,
     platform::web::{WindowExtWebSys, WindowBuilderExtWebSys},
 };
-
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace = console)]
-    pub fn log(s: &str);
-}
 
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
@@ -55,7 +50,7 @@ pub fn main() -> Result<(), JsValue> {
                 event: WindowEvent::KeyboardInput {input, .. }, ..
             } => {
                 if let Some(key) = input.virtual_keycode {
-                    log(&format!("{:?}", key));
+                    console_log!("{:?}", key);
                 }
             }
             Event::MainEventsCleared => {
