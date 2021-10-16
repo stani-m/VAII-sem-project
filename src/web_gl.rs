@@ -132,7 +132,6 @@ void main() {
             texture,
             sampler_uniform,
             position_attrib_loc,
-            // vao,
             vertex_buffer,
         })
     }
@@ -169,6 +168,7 @@ void main() {
         self.context.draw_arrays(WebGlRenderingContext::TRIANGLE_STRIP, 0, 4);
     }
 
+    // Adapted from https://github.com/rustwasm/wasm-bindgen/tree/master/examples/webgl
     fn compile_shader(
         context: &WebGlRenderingContext,
         shader_type: u32,
@@ -194,6 +194,7 @@ void main() {
         }
     }
 
+    // Adapted from https://github.com/rustwasm/wasm-bindgen/tree/master/examples/webgl
     fn link_program(
         context: &WebGlRenderingContext,
         vert_shader: &WebGlShader,
