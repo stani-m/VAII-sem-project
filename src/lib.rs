@@ -1,6 +1,7 @@
 mod web_gl;
 mod color;
 mod logging;
+mod gfx;
 
 use web_gl::WebGLContext;
 use color::Color;
@@ -14,6 +15,7 @@ use winit::{
     dpi::PhysicalSize,
     platform::web::{WindowExtWebSys, WindowBuilderExtWebSys},
 };
+use nalgebra_glm as glm;
 
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
@@ -38,6 +40,19 @@ pub fn main() -> Result<(), JsValue> {
     let context = WebGLContext::new(&window.canvas())?;
     context.bind_all_objects();
 
+    let mut framebuffer = gfx::Framebuffer::new(width as usize, height as usize);
+
+    let data = [
+        glm::vec2(0.5, 0.5),
+        glm::vec2(0.5, -0.5),
+        glm::vec2(-0.5, -0.5),
+        glm::vec2(-0.5, 0.5),
+        glm::vec2(0.5, 0.5),
+    ];
+
+    gfx::draw_lines(&mut framebuffer, &data, glm::identity(), Color::WHITE);
+    context.update_texture(framebuffer.as_slice(), width as i32, height as i32);
+
     event_loop.run(move |event, _, control_flow| {
         // *control_flow = ControlFlow::Wait;
 
@@ -59,15 +74,20 @@ pub fn main() -> Result<(), JsValue> {
                 if new_width != width || new_height != height {
                     window.set_inner_size(PhysicalSize::new(new_width, new_height));
                     context.resize(new_width as i32, new_height as i32);
+                    framebuffer.resize(width as usize, height as usize);
                     width = new_width;
                     height = new_height;
+                    console_log!("Resized {} {}", width, height);
+
+                    framebuffer.clear(Color::BLACK);
+                    gfx::draw_lines(&mut framebuffer, &data, glm::identity(), Color::WHITE);
+                    context.update_texture(
+                        framebuffer.as_slice(),
+                        framebuffer.width() as i32,
+                        framebuffer.height() as i32
+                    ).unwrap();
                 }
 
-                let texture = bytemuck::cast_slice(&[
-                    Color::MAGENTA, Color::YELLOW,
-                    Color::YELLOW, Color::MAGENTA,
-                ]);
-                context.update_texture(texture, 2, 2).unwrap();
                 context.draw();
             }
             _ => (),
