@@ -1,5 +1,5 @@
 [package]
-name = "wasm_sample"
+name = "vaii-sem-project"
 version = "0.1.0"
 edition = "2018"
 resolver = "2"
