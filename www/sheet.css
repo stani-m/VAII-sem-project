@@ -8,12 +8,13 @@
 #fps {
     position: absolute;
     color: white;
-    font-family: "Orange Kid", sans-serif;
-    font-size: x-large;
+    font-family: "Mago", sans-serif;
+    font-size: xx-large;
     margin: 15px;
 }
 
 @font-face {
-    font-family: "Orange Kid";
-    src: url("/fonts/orange-kid.regular.ttf") format("truetype");
+    font-family: "Mago";
+    src: url("/fonts/mago1.ttf") format("truetype");
+    /* Font source: https://nimblebeastscollective.itch.io/magosfonts */
 }
