@@ -17,6 +17,8 @@ use winit::{
 };
 use nalgebra_glm as glm;
 
+use instant::Instant;
+
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
     let html_window = web_sys::window().ok_or(JsValue::from_str("Couldn't get window"))?;
@@ -25,6 +27,10 @@ pub fn main() -> Result<(), JsValue> {
         .get_element_by_id("render_target")
         .ok_or(JsValue::from_str("Render target not found"))?
         .dyn_into::<web_sys::HtmlCanvasElement>()?;
+    let fps = document
+        .get_element_by_id("fps_number")
+        .ok_or(JsValue::from_str("Render target not found"))?
+        .dyn_into::<web_sys::HtmlSpanElement>()?;
 
     let pixel_ratio = html_window.device_pixel_ratio();
     let mut width: f64 = html_window.inner_width()?.as_f64().unwrap() * pixel_ratio;
@@ -42,16 +48,53 @@ pub fn main() -> Result<(), JsValue> {
 
     let mut framebuffer = gfx::Framebuffer::new(width as usize, height as usize);
 
-    let data = [
-        glm::vec2(0.5, 0.5),
-        glm::vec2(0.5, -0.5),
-        glm::vec2(-0.5, -0.5),
-        glm::vec2(-0.5, 0.5),
-        glm::vec2(0.5, 0.5),
+    let front = [
+        glm::vec3(0.5, 0.5, -0.5),
+        glm::vec3(0.5, -0.5, -0.5),
+        glm::vec3(-0.5, -0.5, -0.5),
+        glm::vec3(-0.5, 0.5, -0.5),
+        glm::vec3(0.5, 0.5, -0.5),
     ];
 
-    gfx::draw_lines(&mut framebuffer, &data, glm::identity(), Color::WHITE);
-    context.update_texture(framebuffer.as_slice(), width as i32, height as i32);
+    let back = [
+        glm::vec3(0.5, 0.5, 0.5),
+        glm::vec3(0.5, -0.5, 0.5),
+        glm::vec3(-0.5, -0.5, 0.5),
+        glm::vec3(-0.5, 0.5, 0.5),
+        glm::vec3(0.5, 0.5, 0.5),
+    ];
+
+    let sides = [
+        glm::vec3(0.5, 0.5, -0.5),
+        glm::vec3(0.5, 0.5, 0.5),
+        glm::vec3(-0.5, 0.5, -0.5),
+        glm::vec3(-0.5, 0.5, 0.5),
+        glm::vec3(-0.5, -0.5, -0.5),
+        glm::vec3(-0.5, -0.5, 0.5),
+        glm::vec3(0.5, -0.5, -0.5),
+        glm::vec3(0.5, -0.5, 0.5),
+    ];
+
+    let view = glm::look_at(
+        &glm::vec3(1.0, 2.0, 3.0),
+        &glm::vec3(0.0, 0.0, 0.0),
+        &glm::vec3(0.0, 1.0, 0f32),
+    );
+    let projection = glm::perspective_fov(
+        45_f32.to_radians(),
+        width as f32,
+        height as f32,
+        0.1,
+        100.0,
+    );
+    let mut transform = projection * view;
+
+
+    let program_start = Instant::now();
+    let mut last_frame_time = program_start;
+    let mut last_second = 0;
+
+    let mut frames = 0u16;
 
     event_loop.run(move |event, _, control_flow| {
         // *control_flow = ControlFlow::Wait;
@@ -69,26 +112,56 @@ pub fn main() -> Result<(), JsValue> {
                 }
             }
             Event::MainEventsCleared => {
+                let current_frame_time = Instant::now();
+                let delta_time = current_frame_time - last_frame_time;
+                let since_program_start = current_frame_time - program_start;
+
+                let current_second = since_program_start.as_secs();
+                if current_second != last_second {
+                    fps.set_inner_text(&format!("{}", frames));
+                    last_second = current_second;
+                    frames = 0;
+                }
+                frames += 1;
+
                 let new_width = html_window.inner_width().unwrap().as_f64().unwrap() * pixel_ratio;
                 let new_height = html_window.inner_height().unwrap().as_f64().unwrap() * pixel_ratio;
                 if new_width != width || new_height != height {
-                    window.set_inner_size(PhysicalSize::new(new_width, new_height));
-                    context.resize(new_width as i32, new_height as i32);
-                    framebuffer.resize(width as usize, height as usize);
                     width = new_width;
                     height = new_height;
-                    console_log!("Resized {} {}", width, height);
 
-                    framebuffer.clear(Color::BLACK);
-                    gfx::draw_lines(&mut framebuffer, &data, glm::identity(), Color::WHITE);
-                    context.update_texture(
-                        framebuffer.as_slice(),
-                        framebuffer.width() as i32,
-                        framebuffer.height() as i32
-                    ).unwrap();
+                    window.set_inner_size(PhysicalSize::new(width, height));
+                    context.resize(width as i32, height as i32);
+                    framebuffer.resize(width as usize, height as usize);
+                    let projection = glm::perspective_fov(
+                        45_f32.to_radians(),
+                        width as f32,
+                        height as f32,
+                        0.1,
+                        100.0,
+                    );
+                    transform = projection * view;
+
+                    // console_log!("Resized {} {}", width, height);
                 }
 
+                transform = glm::rotate_y(&transform, -delta_time.as_secs_f32() * std::f32::consts::PI / 8.0);
+
+                framebuffer.clear(Color::BLACK);
+
+                gfx::draw_line_strip(&mut framebuffer, &front, &transform, Color::CYAN);
+                gfx::draw_line_strip(&mut framebuffer, &back, &transform, Color::YELLOW);
+                gfx::draw_line_list(&mut framebuffer, &sides, &transform, Color::MAGENTA);
+
+                context.update_texture(
+                    framebuffer.as_slice(),
+                    framebuffer.width() as i32,
+                    framebuffer.height() as i32
+                ).unwrap();
+
                 context.draw();
+
+                last_frame_time = current_frame_time;
             }
             _ => (),
         }

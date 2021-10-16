@@ -1,5 +1,19 @@
 #render_target {
     position: absolute;
-    left: 0px;
-    top: 0px;
+    left: 0;
+    top: 0;
+    z-index: -1;
+}
+
+#fps {
+    position: absolute;
+    color: white;
+    font-family: "Orange Kid", sans-serif;
+    font-size: x-large;
+    margin: 15px;
+}
+
+@font-face {
+    font-family: "Orange Kid";
+    src: url("/fonts/orange-kid.regular.ttf") format("truetype");
 }

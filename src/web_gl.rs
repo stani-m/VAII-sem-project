@@ -1,11 +1,10 @@
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{
-    WebGl2RenderingContext,
+    WebGlRenderingContext,
     WebGlBuffer,
     WebGlProgram,
     WebGlTexture,
-    WebGlVertexArrayObject,
     WebGlUniformLocation,
     WebGlShader,
 };
@@ -17,22 +16,21 @@ extern "C" {
 }
 
 pub struct WebGLContext {
-    context: WebGl2RenderingContext,
+    context: WebGlRenderingContext,
     program: WebGlProgram,
     texture: WebGlTexture,
     sampler_uniform: WebGlUniformLocation,
-    vao: WebGlVertexArrayObject,
+    position_attrib_loc: i32,
     vertex_buffer: WebGlBuffer,
 }
 
 impl WebGLContext {
-    const VERTEX_SHADER_SOURCE: &'static str = r#"#version 300 es
-
+    const VERTEX_SHADER_SOURCE: &'static str = r#"
 precision mediump float;
 
-in vec2 position;
+attribute vec2 position;
 
-out vec2 texCoord;
+varying vec2 texCoord;
 
 void main() {
     texCoord = position / 2.0 + 0.5;
@@ -40,18 +38,15 @@ void main() {
 }
 "#;
 
-    const FRAGMENT_SHADER_SOURCE: &'static str = r#"#version 300 es
-
+    const FRAGMENT_SHADER_SOURCE: &'static str = r#"
 precision mediump float;
 
 uniform sampler2D sampler;
 
-in vec2 texCoord;
-
-out vec4 fragColor;
+varying vec2 texCoord;
 
 void main() {
-    fragColor = texture(sampler, texCoord);
+    gl_FragColor = texture2D(sampler, texCoord);
 }
 "#;
 
@@ -59,76 +54,32 @@ void main() {
         -1.0, -1.0,
         -1.0, 1.0,
         1.0, -1.0,
-        // -1.0, 1.0,
-        // 1.0, -1.0,
         1.0, 1.0,
     ];
 
     pub fn new(canvas: &web_sys::HtmlCanvasElement) -> Result<Self, JsValue> {
         let context = canvas
-            .get_context("webgl2")?
+            .get_context("webgl")?
             .ok_or(JsValue::from_str("Couldn't acquire context"))?
-            .dyn_into::<WebGl2RenderingContext>()?;
+            .dyn_into::<WebGlRenderingContext>()?;
 
-        context.pixel_storei(WebGl2RenderingContext::UNPACK_ALIGNMENT, 1);
+        context.pixel_storei(WebGlRenderingContext::UNPACK_ALIGNMENT, 1);
 
         let vertex_shader = Self::compile_shader(
             &context,
-            WebGl2RenderingContext::VERTEX_SHADER,
+            WebGlRenderingContext::VERTEX_SHADER,
             Self::VERTEX_SHADER_SOURCE,
         )?;
 
         let fragment_shader = Self::compile_shader(
             &context,
-            WebGl2RenderingContext::FRAGMENT_SHADER,
+            WebGlRenderingContext::FRAGMENT_SHADER,
             Self::FRAGMENT_SHADER_SOURCE,
         )?;
 
         let program = Self::link_program(&context, &vertex_shader, &fragment_shader)?;
         context.use_program(Some(&program));
-        let position_attribute_location = context.get_attrib_location(&program, "position");
-
-        let vao = context.create_vertex_array().ok_or(JsValue::from_str("Unable to create vao"))?;
-        context.bind_vertex_array(Some(&vao));
-
-        let vertex_buffer = context.create_buffer().ok_or(JsValue::from_str("Unable to create buffer"))?;
-        context.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&vertex_buffer));
-        unsafe {
-            let vertex_buffer_view = js_sys::Float32Array::view(&Self::VERTEX_DATA);
-
-            context.buffer_data_with_array_buffer_view(
-                WebGl2RenderingContext::ARRAY_BUFFER,
-                &vertex_buffer_view,
-                WebGl2RenderingContext::STATIC_DRAW,
-            );
-        };
-
-        context.vertex_attrib_pointer_with_i32(0, 2, WebGl2RenderingContext::FLOAT, false, 0, 0);
-        context.enable_vertex_attrib_array(position_attribute_location as u32);
-
-        context.active_texture(WebGl2RenderingContext::TEXTURE0);
-        let texture = context.create_texture().ok_or(JsValue::from_str("Unable to create texture"))?;
-        context.bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(&texture));
-        context.tex_parameteri(
-            WebGl2RenderingContext::TEXTURE_2D,
-            WebGl2RenderingContext::TEXTURE_WRAP_S,
-            WebGl2RenderingContext::REPEAT as i32,
-        );
-        context.tex_parameteri(
-            WebGl2RenderingContext::TEXTURE_2D,
-            WebGl2RenderingContext::TEXTURE_WRAP_T,
-            WebGl2RenderingContext::REPEAT as i32,
-        );
-        context.tex_parameteri(
-            WebGl2RenderingContext::TEXTURE_2D,
-            WebGl2RenderingContext::TEXTURE_MIN_FILTER,
-            WebGl2RenderingContext::NEAREST as i32,
-        );
-        context.tex_parameteri(
-            WebGl2RenderingContext::TEXTURE_2D,
-            WebGl2RenderingContext::TEXTURE_MAG_FILTER,
-            WebGl2RenderingContext::NEAREST as i32,
-        );
+        let position_attrib_loc = context.get_attrib_location(&program, "position");
 
         let sampler_uniform = context
             .get_uniform_location(&program, "sampler")
@@ -136,49 +87,90 @@ void main() {
 
         context.uniform1i(Some(&sampler_uniform), 0);
 
+        let vertex_buffer = context.create_buffer().ok_or(JsValue::from_str("Unable to create buffer"))?;
+        context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&vertex_buffer));
+        unsafe {
+            let vertex_buffer_view = js_sys::Float32Array::view(&Self::VERTEX_DATA);
+
+            context.buffer_data_with_array_buffer_view(
+                WebGlRenderingContext::ARRAY_BUFFER,
+                &vertex_buffer_view,
+                WebGlRenderingContext::STATIC_DRAW,
+            );
+        };
+
+        context.enable_vertex_attrib_array(position_attrib_loc as u32);
+        context.vertex_attrib_pointer_with_i32(position_attrib_loc as u32, 2, WebGlRenderingContext::FLOAT, false, 0, 0);
+
+        context.active_texture(WebGlRenderingContext::TEXTURE0);
+        let texture = context.create_texture().ok_or(JsValue::from_str("Unable to create texture"))?;
+        context.bind_texture(WebGlRenderingContext::TEXTURE_2D, Some(&texture));
+        context.tex_parameteri(
+            WebGlRenderingContext::TEXTURE_2D,
+            WebGlRenderingContext::TEXTURE_WRAP_S,
+            WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+        );
+        context.tex_parameteri(
+            WebGlRenderingContext::TEXTURE_2D,
+            WebGlRenderingContext::TEXTURE_WRAP_T,
+            WebGlRenderingContext::CLAMP_TO_EDGE as i32,
+        );
+        context.tex_parameteri(
+            WebGlRenderingContext::TEXTURE_2D,
+            WebGlRenderingContext::TEXTURE_MIN_FILTER,
+            WebGlRenderingContext::NEAREST as i32,
+        );
+        context.tex_parameteri(
+            WebGlRenderingContext::TEXTURE_2D,
+            WebGlRenderingContext::TEXTURE_MAG_FILTER,
+            WebGlRenderingContext::NEAREST as i32,
+        );
+
         Ok(Self {
             context,
             program,
             texture,
             sampler_uniform,
-            vao,
+            position_attrib_loc,
+            // vao,
             vertex_buffer,
         })
     }
 
     pub fn update_texture(&self, data: &[u8], width: i32, height: i32) -> Result<(), JsValue> {
         self.context.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
-            WebGl2RenderingContext::TEXTURE_2D,
+            WebGlRenderingContext::TEXTURE_2D,
             0,
-            WebGl2RenderingContext::RGB as i32,
+            WebGlRenderingContext::RGB as i32,
             width,
             height,
             0,
-            WebGl2RenderingContext::RGB,
-            WebGl2RenderingContext::UNSIGNED_BYTE,
+            WebGlRenderingContext::RGB,
+            WebGlRenderingContext::UNSIGNED_BYTE,
             Some(data),
         )
     }
 
-    pub fn resize(&self, new_width: i32, new_height: i32) {
-        self.context.viewport(0, 0, new_width, new_height);
+    pub fn resize(&self, width: i32, height: i32) {
+        self.context.viewport(0, 0, width, height);
     }
 
     pub fn bind_all_objects(&self) {
-        self.context.bind_vertex_array(Some(&self.vao));
-        self.context.bind_buffer(WebGl2RenderingContext::ARRAY_BUFFER, Some(&self.vertex_buffer));
-        self.context.active_texture(WebGl2RenderingContext::TEXTURE0);
-        self.context.bind_texture(WebGl2RenderingContext::TEXTURE_2D, Some(&self.texture));
+        self.context.enable_vertex_attrib_array(self.position_attrib_loc as u32);
+        self.context.vertex_attrib_pointer_with_i32(self.position_attrib_loc as u32, 2, WebGlRenderingContext::FLOAT, false, 0, 0);
+        self.context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&self.vertex_buffer));
+        self.context.active_texture(WebGlRenderingContext::TEXTURE0);
+        self.context.bind_texture(WebGlRenderingContext::TEXTURE_2D, Some(&self.texture));
         self.context.use_program(Some(&self.program));
         self.context.uniform1i(Some(&self.sampler_uniform), 0);
     }
 
     pub fn draw(&self) {
-        self.context.draw_arrays(WebGl2RenderingContext::TRIANGLE_STRIP, 0, 4);
+        self.context.draw_arrays(WebGlRenderingContext::TRIANGLE_STRIP, 0, 4);
     }
 
     fn compile_shader(
-        context: &WebGl2RenderingContext,
+        context: &WebGlRenderingContext,
         shader_type: u32,
         source: &str,
     ) -> Result<WebGlShader, JsValue> {
@@ -189,7 +181,7 @@ void main() {
         context.compile_shader(&shader);
 
         if context
-            .get_shader_parameter(&shader, WebGl2RenderingContext::COMPILE_STATUS)
+            .get_shader_parameter(&shader, WebGlRenderingContext::COMPILE_STATUS)
             .as_bool()
             .unwrap_or(false)
         {
@@ -203,7 +195,7 @@ void main() {
     }
 
     fn link_program(
-        context: &WebGl2RenderingContext,
+        context: &WebGlRenderingContext,
         vert_shader: &WebGlShader,
         frag_shader: &WebGlShader,
     ) -> Result<WebGlProgram, JsValue> {
@@ -216,7 +208,7 @@ void main() {
         context.link_program(&program);
 
         if context
-            .get_program_parameter(&program, WebGl2RenderingContext::LINK_STATUS)
+            .get_program_parameter(&program, WebGlRenderingContext::LINK_STATUS)
             .as_bool()
             .unwrap_or(false)
         {

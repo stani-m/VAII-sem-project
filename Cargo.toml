@@ -13,9 +13,10 @@ crate-type = ["cdylib"]
 wasm-bindgen = "0.2.78"
 js-sys = "0.3.55"
 winit = { version = "0.25.0", features = ['web-sys'] }
-bytemuck = { version = "1.7.2", features = ["derive"] }
+bytemuck = { version = "1.7.2", features = ['derive'] }
 nalgebra-glm = "0.15.0"
 itertools = "0.10.1"
+instant = { version = "0.1.11", features = [ 'wasm-bindgen'] }
 
 [dependencies.web-sys]
 version = "0.3.55"
@@ -42,12 +43,10 @@ features = [
   'Window',
   'WheelEvent',
   'WebGlBuffer',
-  'WebGlVertexArrayObject',
-  'WebGl2RenderingContext',
+  'WebGlRenderingContext',
   'WebGlProgram',
   'WebGlShader',
   'WebGlTexture',
-  'WebGlSampler',
   'WebGlUniformLocation',
-  'Screen',
+  'HtmlSpanElement',
 ]

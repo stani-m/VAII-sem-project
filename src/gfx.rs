@@ -2,7 +2,6 @@ use std::ops::{Index, IndexMut, Range};
 use itertools::Itertools;
 use nalgebra_glm as glm;
 use crate::color::Color;
-use crate::console_log;
 
 pub struct Framebuffer {
     data: Vec<Color>,
@@ -47,6 +46,7 @@ impl Framebuffer {
         self.data.fill(color);
     }
 
+    #[inline]
     pub fn as_slice(&self) -> &[u8] {
         bytemuck::cast_slice(self.data.as_slice())
     }
@@ -67,35 +67,70 @@ impl Framebuffer {
     }
 }
 
-pub fn draw_lines(
+pub fn draw_line_strip(
     framebuffer: &mut Framebuffer,
-    data: &[glm::Vec2],
-    transform: glm::Mat4x4,
+    data: &[glm::Vec3],
+    transform: &glm::Mat4x4,
     color: Color,
 ) {
-    let x_screen_transform = (framebuffer.width() / 2) as f32;
-    let y_screen_transform = (framebuffer.height() / 2) as f32;
-    // console_log!("{} {} {}", framebuffer.width(), framebuffer.height(), screen);
-    let data = data
+    let data = transform_data(
+        data,
+        framebuffer.width() as f32,
+        framebuffer.height() as f32,
+        transform
+    );
+
+    for (from, to) in data.tuple_windows() {
+        let from = (from[0] as i32, from[1] as i32);
+        let to = (to[0] as i32, to[1] as i32);
+        draw_line(framebuffer, from, to, color);
+    }
+}
+
+pub fn draw_line_list(
+    framebuffer: &mut Framebuffer,
+    data: &[glm::Vec3],
+    transform: &glm::Mat4x4,
+    color: Color,
+) {
+    let data = transform_data(
+        data,
+        framebuffer.width() as f32,
+        framebuffer.height() as f32,
+        transform,
+    );
+
+    for (from, to) in data.tuples() {
+        let from = (from[0] as i32, from[1] as i32);
+        let to = (to[0] as i32, to[1] as i32);
+        draw_line(framebuffer, from, to, color);
+    }
+}
+
+fn transform_data<'a>(
+    data: &'a [glm::Vec3],
+    width: f32,
+    height: f32,
+    transform: &'a glm::Mat4x4,
+) -> impl Iterator<Item = glm::Vec2> + 'a {
+    let x_screen_transform = width / 2.0;
+    let y_screen_transform = height / 2.0;
+
+    data
         .iter()
-        .map(|point| {
-            let clip_point = (transform * glm::vec4(point[0], point[1], 0.0, 1.0)).xy();
+        .map(move |point| {
+            let transformed_point = transform * glm::vec4(point[0], point[1], point[2], 1.0);
+            let w = transformed_point[3];
+            let clip_point = transformed_point / w;
             let screen_point = glm::vec2(
                 (clip_point[0] + 1.0) * x_screen_transform,
                 (clip_point[1] + 1.0) * y_screen_transform,
             );
             screen_point
-        });
-
-    for (from, to) in data.tuple_windows() {
-        let from = (from[0] as i32, from[1] as i32);
-        let to = (to[0] as i32, to[1] as i32);
-        console_log!("{:?} {:?}", from, to);
-        draw_line(framebuffer, from, to, color);
-    }
+        })
 }
 
-pub fn draw_line(framebuffer: &mut Framebuffer, from: (i32, i32), to: (i32, i32), color: Color) {
+fn draw_line(framebuffer: &mut Framebuffer, from: (i32, i32), to: (i32, i32), color: Color) {
     let (mut x0, mut y0) = from;
     let (mut x1, mut y1) = to;
     let (run, rise) = (x1 - x0, y1 - y0);
