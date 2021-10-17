@@ -1,22 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>VAII semestral project</title>
-    <link rel="stylesheet" href="sheet.css">
-    <script type="module">
-        import {default as init} from './vaii_sem_project.js';
-
-        async function run() {
-            await init('./vaii_sem_project_bg.wasm');
-        }
-
-        run();
-    </script>
+    <title>Wire Racer</title>
+    <link rel="stylesheet" href="general.css">
 </head>
 <body>
-<canvas id="render_target"></canvas>
-<p id="fps">FPS: <span id="fps_number">60</span></p>
+<div id="outer">
+    <div id="inner">
+        <h1>Wire Racer</h1>
+        <p>
+            Wire racer is a 3D racing game with wireframe graphics that I'm working on as my semestral project for VAII.
+            All rendering is done using a software rasterizer that runs directly on your machine using WebAssembly.
+            The game is not finished yet but most of the work on the rasterizer is already done so launching the game
+            shows you a demo of a spinning cube.
+        </p>
+        <div class="button_box">
+            <a class="button" href="game.html">Launch game!</a>
+            <a class="button">How to play</a>
+            <a class="button">Hall of fame</a>
+        </div>
+    </div>
+</div>
 </body>
 </html>

@@ -1,0 +1,51 @@
+body {
+    padding: 0;
+    margin: 0;
+    background-color: black;
+    color: white;
+    font-family: sans-serif;
+}
+
+#outer {
+    margin: 0 auto;
+    max-width: 1000px;
+}
+
+#inner {
+    margin: 0 3%;
+    text-align: justify;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    text-align: center;
+    text-decoration: underline;
+    color: mediumblue;
+}
+
+.button {
+    display: block;
+    padding: 10px;
+    border: 2px solid blue;
+    margin: 14px;
+    color: blue;
+    text-align: center;
+    text-decoration: none;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.button:hover {
+    color: blueviolet;
+    border-color: blueviolet;
+}
+
+.button_box {
+    margin: auto;
+    width: fit-content;
+    width: -moz-fit-content;
+}
