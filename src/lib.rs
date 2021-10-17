@@ -11,7 +11,7 @@ use wasm_bindgen::JsCast;
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
-    window::{Window, WindowBuilder},
+    window::WindowBuilder,
     dpi::PhysicalSize,
     platform::web::{WindowExtWebSys, WindowBuilderExtWebSys},
 };
@@ -29,7 +29,7 @@ pub fn main() -> Result<(), JsValue> {
         .dyn_into::<web_sys::HtmlCanvasElement>()?;
     let fps = document
         .get_element_by_id("fps_number")
-        .ok_or(JsValue::from_str("Render target not found"))?
+        .ok_or(JsValue::from_str("Fps indicator not found"))?
         .dyn_into::<web_sys::HtmlSpanElement>()?;
 
     let pixel_ratio = html_window.device_pixel_ratio();
@@ -37,7 +37,7 @@ pub fn main() -> Result<(), JsValue> {
     let mut height: f64 = html_window.inner_height()?.as_f64().unwrap() * pixel_ratio;
 
     let event_loop = EventLoop::new();
-    let window: Window = WindowBuilder::new()
+    let window = WindowBuilder::new()
         .with_inner_size(PhysicalSize::new(width, height))
         .with_canvas(Some(canvas))
         .build(&event_loop)
@@ -75,6 +75,8 @@ pub fn main() -> Result<(), JsValue> {
         glm::vec3(0.5, -0.5, 0.5),
     ];
 
+    let mut model = glm::identity();
+
     let view = glm::look_at(
         &glm::vec3(1.0, 2.0, 3.0),
         &glm::vec3(0.0, 0.0, 0.0),
@@ -87,7 +89,7 @@ pub fn main() -> Result<(), JsValue> {
         0.1,
         100.0,
     );
-    let mut transform = projection * view;
+    let mut camera = projection * view;
 
 
     let program_start = Instant::now();
@@ -118,7 +120,7 @@ pub fn main() -> Result<(), JsValue> {
 
                 let current_second = since_program_start.as_secs();
                 if current_second != last_second {
-                    fps.set_inner_text(&format!("{}", frames));
+                    fps.set_inner_text(&frames.to_string());
                     last_second = current_second;
                     frames = 0;
                 }
@@ -140,12 +142,11 @@ pub fn main() -> Result<(), JsValue> {
                         0.1,
                         100.0,
                     );
-                    transform = projection * view;
-
-                    // console_log!("Resized {} {}", width, height);
+                    camera = projection * view;
                 }
 
-                transform = glm::rotate_y(&transform, -delta_time.as_secs_f32() * std::f32::consts::PI / 8.0);
+                model = glm::rotate_y(&model, -delta_time.as_secs_f32() * std::f32::consts::PI / 8.0);
+                let transform = camera * model;
 
                 framebuffer.clear(Color::BLACK);
 
