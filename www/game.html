@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Wire Racer</title>
+    <link rel="stylesheet" href="game.css">
+    <script type="module">
+        import {default as init} from './vaii_sem_project.js';
+
+        async function run() {
+            await init('./vaii_sem_project_bg.wasm');
+        }
+
+        run();
+    </script>
+</head>
+<body>
+<canvas id="render_target"></canvas>
+<div id="top_left">
+    <p id="fps">FPS: <span id="fps_number">60</span></p>
+</div>
+</body>
+</html>
