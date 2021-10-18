@@ -14,6 +14,7 @@ body {
 #inner {
     margin: 0 3%;
     text-align: justify;
+    font-size: large;
 }
 
 h1,
@@ -24,7 +25,7 @@ h5,
 h6 {
     text-align: center;
     text-decoration: underline;
-    color: mediumblue;
+    color: blue;
 }
 
 .button {
@@ -48,4 +49,72 @@ h6 {
     margin: auto;
     width: fit-content;
     width: -moz-fit-content;
+}
+
+table {
+    margin: 10px auto;
+    width: 95%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+thead {
+    position: sticky;
+    top: 10px;
+    background-color: #232323;
+    text-align: center;
+}
+
+thead tr:first-child th {
+    border-top-width: 2px;
+}
+
+thead tr:last-child th {
+    border-bottom-width: 2px;
+}
+
+th {
+    border: 1px solid magenta;
+}
+
+th:first-child, td:first-child {
+    border-left-width: 2px;
+}
+
+th:last-child, td:last-child {
+    border-right-width: 2px;
+}
+
+tbody {
+    bottom: 10px;
+}
+
+tbody tr:nth-child(odd) td {
+    background-color: dimgrey;
+}
+
+tbody tr:nth-child(even) td {
+    background-color: #4b4b4b;
+}
+
+table td:first-child, td:last-child, th:first-child, th:last-child {
+    text-align: center;
+    width: 0;
+}
+
+tbody tr:first-child td {
+    border-top-width: 0;
+}
+
+tbody tr:last-child td {
+    border-bottom-width: 2px;
+}
+
+tbody tr:hover td {
+    color: black;
+    background-color: white;
+}
+
+td {
+    border: 1px solid darkcyan;
 }
