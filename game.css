@@ -1,0 +1,25 @@
+#render_target {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: -1;
+}
+
+#top_left {
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+#fps {
+    color: white;
+    font-family: "Mago", sans-serif;
+    font-size: xx-large;
+    margin: 15px;
+}
+
+/* Font source: https://nimblebeastscollective.itch.io/magosfonts */
+@font-face {
+    font-family: "Mago";
+    src: url("/fonts/mago1.ttf") format("truetype");
+}
