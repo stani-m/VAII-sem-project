@@ -60,7 +60,7 @@ void main() {
     pub fn new(canvas: &web_sys::HtmlCanvasElement) -> Result<Self, JsValue> {
         let context = canvas
             .get_context("webgl")?
-            .ok_or(JsValue::from_str("Couldn't acquire context"))?
+            .ok_or("Couldn't acquire context")?
             .dyn_into::<WebGlRenderingContext>()?;
 
         context.pixel_storei(WebGlRenderingContext::UNPACK_ALIGNMENT, 1);
@@ -83,11 +83,11 @@ void main() {
 
         let sampler_uniform = context
             .get_uniform_location(&program, "sampler")
-            .ok_or(JsValue::from_str("Unable to locate uniform"))?;
+            .ok_or("Unable to locate uniform")?;
 
         context.uniform1i(Some(&sampler_uniform), 0);
 
-        let vertex_buffer = context.create_buffer().ok_or(JsValue::from_str("Unable to create buffer"))?;
+        let vertex_buffer = context.create_buffer().ok_or("Unable to create buffer")?;
         context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&vertex_buffer));
         unsafe {
             let vertex_buffer_view = js_sys::Float32Array::view(&Self::VERTEX_DATA);
@@ -103,7 +103,7 @@ void main() {
         context.vertex_attrib_pointer_with_i32(position_attrib_loc as u32, 2, WebGlRenderingContext::FLOAT, false, 0, 0);
 
         context.active_texture(WebGlRenderingContext::TEXTURE0);
-        let texture = context.create_texture().ok_or(JsValue::from_str("Unable to create texture"))?;
+        let texture = context.create_texture().ok_or("Unable to create texture")?;
         context.bind_texture(WebGlRenderingContext::TEXTURE_2D, Some(&texture));
         context.tex_parameteri(
             WebGlRenderingContext::TEXTURE_2D,
@@ -176,7 +176,7 @@ void main() {
     ) -> Result<WebGlShader, JsValue> {
         let shader = context
             .create_shader(shader_type)
-            .ok_or(JsValue::from_str("Unable to create shader object"))?;
+            .ok_or("Unable to create shader object")?;
         context.shader_source(&shader, source);
         context.compile_shader(&shader);
 
@@ -202,7 +202,7 @@ void main() {
     ) -> Result<WebGlProgram, JsValue> {
         let program = context
             .create_program()
-            .ok_or(JsValue::from_str("Unable to create shader object"))?;
+            .ok_or("Unable to create shader object")?;
 
         context.attach_shader(&program, vert_shader);
         context.attach_shader(&program, frag_shader);

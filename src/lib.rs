@@ -21,27 +21,32 @@ use instant::Instant;
 
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
-    let html_window = web_sys::window().ok_or(JsValue::from_str("Couldn't get window"))?;
-    let document = html_window.document().ok_or(JsValue::from_str("Couldn't get document"))?;
+    let html_window = web_sys::window().ok_or("Couldn't get window")?;
+    let document = html_window.document().ok_or("Couldn't get document")?;
     let canvas = document
         .get_element_by_id("render_target")
-        .ok_or(JsValue::from_str("Render target not found"))?
+        .ok_or("Render target not found")?
         .dyn_into::<web_sys::HtmlCanvasElement>()?;
     let fps = document
         .get_element_by_id("fps_number")
-        .ok_or(JsValue::from_str("Fps indicator not found"))?
+        .ok_or("Fps indicator not found")?
         .dyn_into::<web_sys::HtmlSpanElement>()?;
 
     let pixel_ratio = html_window.device_pixel_ratio();
-    let mut width: f64 = html_window.inner_width()?.as_f64().unwrap() * pixel_ratio;
-    let mut height: f64 = html_window.inner_height()?.as_f64().unwrap() * pixel_ratio;
+    let mut width = canvas.client_width() as f64 * pixel_ratio;
+    let mut height = canvas.client_height() as f64 * pixel_ratio;
 
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
-        .with_inner_size(PhysicalSize::new(width, height))
         .with_canvas(Some(canvas))
         .build(&event_loop)
         .unwrap();
+
+    window.canvas().style().remove_property("width")?;
+    window.canvas().style().remove_property("height")?;
+    window.canvas().set_width(width as u32);
+    window.canvas().set_height(height as u32);
+
 
     let context = WebGLContext::new(&window.canvas())?;
     context.bind_all_objects();
@@ -113,6 +118,12 @@ pub fn main() -> Result<(), JsValue> {
                     console_log!("{:?}", key);
                 }
             }
+            Event::WindowEvent {
+                event: WindowEvent::Resized(_), ..
+            } => {
+                window.canvas().style().remove_property("width").unwrap();
+                window.canvas().style().remove_property("height").unwrap();
+            }
             Event::MainEventsCleared => {
                 let current_frame_time = Instant::now();
                 let delta_time = current_frame_time - last_frame_time;
@@ -126,13 +137,14 @@ pub fn main() -> Result<(), JsValue> {
                 }
                 frames += 1;
 
-                let new_width = html_window.inner_width().unwrap().as_f64().unwrap() * pixel_ratio;
-                let new_height = html_window.inner_height().unwrap().as_f64().unwrap() * pixel_ratio;
+                let new_width = window.canvas().client_width() as f64 * pixel_ratio;
+                let new_height = window.canvas().client_height() as f64 * pixel_ratio;
                 if new_width != width || new_height != height {
                     width = new_width;
                     height = new_height;
 
-                    window.set_inner_size(PhysicalSize::new(width, height));
+                    window.canvas().set_width(width as u32);
+                    window.canvas().set_height(height as u32);
                     context.resize(width as i32, height as i32);
                     framebuffer.resize(width as usize, height as usize);
                     let projection = glm::perspective_fov(
