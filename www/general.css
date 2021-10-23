@@ -99,7 +99,8 @@ tbody tr:nth-child(even) td {
 
 table td:first-child, td:last-child, th:first-child, th:last-child {
     text-align: center;
-    width: 0;
+    width: 1%;
+    white-space: nowrap;
 }
 
 tbody tr:first-child td {
