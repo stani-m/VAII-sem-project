@@ -1,3 +1,4 @@
+use std::mem;
 use std::ops::{Index, IndexMut};
 use itertools::Itertools;
 use nalgebra_glm as glm;
@@ -162,15 +163,11 @@ fn draw_line(
         }
     };
     if run == 0 {
-        if y0 > y1 {
-            let temp = y0;
-            y0 = y1;
-            y1 = temp;
-            let temp = z0;
-            z0 = z1;
-            z1 = temp;
-        }
         let z_delta = (z1 - z0) / rise as f32;
+        if y0 > y1 {
+            mem::swap(&mut y0, &mut y1);
+            mem::swap(&mut z0, &mut z1);
+        }
         let mut z = z0;
         if x0 >= 0 && x0 < width as i32 {
             for y in y0..=y1 {
@@ -186,19 +183,15 @@ fn draw_line(
             let delta = rise.abs() * 2;
             let mut threshold = run.abs();
             let threshold_inc = threshold * 2;
+            let z_delta = (z1 - z0) / run as f32;
             let mut y;
             if x0 > x1 {
-                let temp = x0;
-                x0 = x1;
-                x1 = temp;
-                let temp = z0;
-                z0 = z1;
-                z1 = temp;
+                mem::swap(&mut x0, &mut x1);
+                mem::swap(&mut z0, &mut z1);
                 y = y1;
             } else {
                 y = y0;
             }
-            let z_delta = (z1 - z0) / run as f32;
             let mut z = z0;
             for x in x0..=x1 {
                 put_pixel_if_possible(x, y, z);
@@ -213,19 +206,15 @@ fn draw_line(
             let delta = run.abs() * 2;
             let mut threshold = rise.abs();
             let threshold_inc = threshold * 2;
+            let z_delta = (z1 - z0) / rise as f32;
             let mut x;
             if y0 > y1 {
-                let temp = y0;
-                y0 = y1;
-                y1 = temp;
-                let temp = z0;
-                z0 = z1;
-                z1 = temp;
+                mem::swap(&mut y0, &mut y1);
+                mem::swap(&mut z0, &mut z1);
                 x = x1;
             } else {
                 x = x0;
             }
-            let z_delta = (z1 - z0) / rise as f32;
             let mut z = z0;
             for y in y0..=y1 {
                 put_pixel_if_possible(x, y, z);
