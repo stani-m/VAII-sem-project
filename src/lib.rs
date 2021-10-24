@@ -12,12 +12,13 @@ use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
-    dpi::PhysicalSize,
     platform::web::{WindowExtWebSys, WindowBuilderExtWebSys},
 };
 use nalgebra_glm as glm;
 
 use instant::Instant;
+
+const RESOLUTION_SCALE: usize = 1;
 
 #[wasm_bindgen(start)]
 pub fn main() -> Result<(), JsValue> {
@@ -51,7 +52,10 @@ pub fn main() -> Result<(), JsValue> {
     let context = WebGLContext::new(&window.canvas())?;
     context.bind_all_objects();
 
-    let mut framebuffer = gfx::Framebuffer::new(width as usize, height as usize);
+    let mut framebuffer = gfx::Framebuffer::new(
+        width as usize / RESOLUTION_SCALE,
+        height as usize / RESOLUTION_SCALE,
+    );
 
     let front = [
         glm::vec3(0.5, 0.5, -0.5),
@@ -146,7 +150,10 @@ pub fn main() -> Result<(), JsValue> {
                     window.canvas().set_width(width as u32);
                     window.canvas().set_height(height as u32);
                     context.resize(width as i32, height as i32);
-                    framebuffer.resize(width as usize, height as usize);
+                    framebuffer.resize(
+                        width as usize / RESOLUTION_SCALE,
+                        height as usize / RESOLUTION_SCALE,
+                    );
                     let projection = glm::perspective_fov(
                         45_f32.to_radians(),
                         width as f32,
@@ -157,7 +164,7 @@ pub fn main() -> Result<(), JsValue> {
                     camera = projection * view;
                 }
 
-                model = glm::rotate_y(&model, -delta_time.as_secs_f32() * std::f32::consts::PI / 8.0);
+                model = glm::rotate_y(&model, delta_time.as_secs_f32() * -std::f32::consts::PI / 8.0);
                 let transform = camera * model;
 
                 framebuffer.clear(Color::BLACK);
