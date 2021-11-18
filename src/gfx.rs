@@ -1,8 +1,8 @@
-use std::mem;
-use std::ops::{Index, IndexMut};
+use crate::color::Color;
 use itertools::Itertools;
 use nalgebra_glm as glm;
-use crate::color::Color;
+use std::mem;
+use std::ops::{Index, IndexMut};
 
 pub struct Framebuffer {
     color: Vec<Color>,
@@ -81,14 +81,16 @@ pub fn draw_line_strip(
     transform: &glm::Mat4x4,
     color: Color,
 ) {
-    let data = transform_data(
+    let data = transform_data(data, transform);
+    let data = clip_lines(data.tuple_windows());
+    let data = perspective_divide(data);
+    let data = viewport_transform(
         data,
         framebuffer.width() as f32,
         framebuffer.height() as f32,
-        transform,
     );
 
-    for (from, to) in data.tuple_windows() {
+    for (from, to) in data {
         let from = (from[0] as i32, from[1] as i32, from[2]);
         let to = (to[0] as i32, to[1] as i32, to[2]);
         draw_line(framebuffer, from, to, color);
@@ -101,14 +103,16 @@ pub fn draw_line_list(
     transform: &glm::Mat4x4,
     color: Color,
 ) {
-    let data = transform_data(
+    let data = transform_data(data, transform);
+    let data = clip_lines(data.tuples());
+    let data = perspective_divide(data);
+    let data = viewport_transform(
         data,
         framebuffer.width() as f32,
         framebuffer.height() as f32,
-        transform,
     );
 
-    for (from, to) in data.tuples() {
+    for (from, to) in data {
         let from = (from[0] as i32, from[1] as i32, from[2]);
         let to = (to[0] as i32, to[1] as i32, to[2]);
         draw_line(framebuffer, from, to, color);
@@ -117,26 +121,55 @@ pub fn draw_line_list(
 
 fn transform_data<'a>(
     data: &'a [glm::Vec3],
+    transform: &'a glm::Mat4x4,
+) -> impl Iterator<Item = glm::Vec4> + 'a {
+    data.iter().map(move |point| {
+        transform * glm::vec4(point[0], point[1], point[2], 1.0)
+    })
+}
+
+// TODO: Rewrite these functions to operate on iterator items instead of iterators
+fn clip_lines(
+    data: impl Iterator<Item = (glm::Vec4, glm::Vec4)>,
+) -> impl Iterator<Item = (glm::Vec4, glm::Vec4)> {
+    data.filter(|&(a, b)| {
+        let a_w = a[3];
+        let b_w = b[3];
+        !(0..3).any(|i| a[i].abs() > a_w && b[i].abs() > b_w)
+    })
+}
+
+fn perspective_divide(
+    data: impl Iterator<Item = (glm::Vec4, glm::Vec4)>,
+) -> impl Iterator<Item = (glm::Vec4, glm::Vec4)> {
+    data.map(|(a, b)| {
+        let a_w = a[3];
+        let b_w = b[3];
+        (a / a_w, b / b_w)
+    })
+}
+
+fn viewport_transform(
+    data: impl Iterator<Item = (glm::Vec4, glm::Vec4)>,
     width: f32,
     height: f32,
-    transform: &'a glm::Mat4x4,
-) -> impl Iterator<Item=glm::Vec3> + 'a {
+) -> impl Iterator<Item = (glm::Vec3, glm::Vec3)> {
     let x_screen_transform = width / 2.0;
     let y_screen_transform = height / 2.0;
 
-    data
-        .iter()
-        .map(move |point| {
-            let transformed_point = transform * glm::vec4(point[0], point[1], point[2], 1.0);
-            let w = transformed_point[3];
-            let clip_point = transformed_point / w;
-            let screen_point = glm::vec3(
-                (clip_point[0] + 1.0) * x_screen_transform,
-                (clip_point[1] + 1.0) * y_screen_transform,
-                clip_point[2]
-            );
-            screen_point
-        })
+    data.map(move |(a, b)| {
+        let a = glm::vec3(
+            (a[0] + 1.0) * x_screen_transform,
+            (a[1] + 1.0) * y_screen_transform,
+            a[2],
+        );
+        let b = glm::vec3(
+            (b[0] + 1.0) * x_screen_transform,
+            (b[1] + 1.0) * y_screen_transform,
+            b[2],
+        );
+        (a, b)
+    })
 }
 
 fn draw_line(
@@ -149,26 +182,31 @@ fn draw_line(
     let (mut x1, mut y1, mut z1) = to;
     let run = x1 - x0;
     let rise = y1 - y0;
+    let dive = z1 - z0;
     let width = framebuffer.width();
+    let height = framebuffer.height();
     let width_range = 0..width as i32;
-    let height_range = 0..framebuffer.height() as i32;
+    let height_range = 0..height as i32;
+    let depth_range = 0.0..1.0;
     let mut put_pixel_if_possible = |x: i32, y: i32, z: f32| {
-        if width_range.contains(&x) && height_range.contains(&y) {
+        if width_range.contains(&x) && height_range.contains(&y) && depth_range.contains(&z) {
             let index = framebuffer.calculate_index(x as usize, y as usize);
             let depth = unsafe { framebuffer.depth.get_unchecked_mut(index) };
             if z <= *depth {
                 *depth = z;
-                unsafe { *framebuffer.color.get_unchecked_mut(index) = color; }
+                unsafe {
+                    *framebuffer.color.get_unchecked_mut(index) = color;
+                }
             }
         }
     };
     if run == 0 {
-        let z_delta = (z1 - z0) / rise as f32;
+        let z_delta = dive / rise as f32;
+        let mut z = z0;
         if y0 > y1 {
             mem::swap(&mut y0, &mut y1);
             mem::swap(&mut z0, &mut z1);
         }
-        let mut z = z0;
         if x0 >= 0 && x0 < width as i32 {
             for y in y0..=y1 {
                 put_pixel_if_possible(x0, y, z);
@@ -183,7 +221,8 @@ fn draw_line(
             let delta = rise.abs() * 2;
             let mut threshold = run.abs();
             let threshold_inc = threshold * 2;
-            let z_delta = (z1 - z0) / run as f32;
+            let z_delta = dive / run as f32;
+            let mut z = z0;
             let mut y;
             if x0 > x1 {
                 mem::swap(&mut x0, &mut x1);
@@ -192,7 +231,6 @@ fn draw_line(
             } else {
                 y = y0;
             }
-            let mut z = z0;
             for x in x0..=x1 {
                 put_pixel_if_possible(x, y, z);
                 z += z_delta;
@@ -206,7 +244,8 @@ fn draw_line(
             let delta = run.abs() * 2;
             let mut threshold = rise.abs();
             let threshold_inc = threshold * 2;
-            let z_delta = (z1 - z0) / rise as f32;
+            let z_delta = dive / rise as f32;
+            let mut z = z0;
             let mut x;
             if y0 > y1 {
                 mem::swap(&mut y0, &mut y1);
@@ -215,7 +254,6 @@ fn draw_line(
             } else {
                 x = x0;
             }
-            let mut z = z0;
             for y in y0..=y1 {
                 put_pixel_if_possible(x, y, z);
                 z += z_delta;
