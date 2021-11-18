@@ -8,5 +8,6 @@ extern "C" {
 
 #[macro_export]
 macro_rules! console_log {
-    ($($t:tt)*) => (crate::logging::log(&format_args!($($t)*).to_string()))
+    () => (crate::logging::log("\n"));
+    ($($t:tt)*) => (crate::logging::log(&format_args!($($t)*).to_string()));
 }

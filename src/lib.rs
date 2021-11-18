@@ -91,7 +91,7 @@ pub fn main() -> Result<(), JsValue> {
         &glm::vec3(0.0, 0.0, 0.0),
         &glm::vec3(0.0, 1.0, 0f32),
     );
-    let projection = glm::perspective_fov(
+    let projection = glm::perspective_fov_zo(
         45_f32.to_radians(),
         width as f32,
         height as f32,
@@ -154,7 +154,7 @@ pub fn main() -> Result<(), JsValue> {
                         width as usize / RESOLUTION_SCALE,
                         height as usize / RESOLUTION_SCALE,
                     );
-                    let projection = glm::perspective_fov(
+                    let projection = glm::perspective_fov_zo(
                         45_f32.to_radians(),
                         width as f32,
                         height as f32,
