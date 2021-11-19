@@ -123,9 +123,8 @@ fn transform_data<'a>(
     data: &'a [glm::Vec3],
     transform: &'a glm::Mat4x4,
 ) -> impl Iterator<Item = glm::Vec4> + 'a {
-    data.iter().map(move |point| {
-        transform * glm::vec4(point[0], point[1], point[2], 1.0)
-    })
+    data.iter()
+        .map(move |point| transform * glm::vec4(point[0], point[1], point[2], 1.0))
 }
 
 // TODO: Rewrite these functions to operate on iterator items instead of iterators

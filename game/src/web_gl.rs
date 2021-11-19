@@ -1,12 +1,8 @@
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use web_sys::{
-    WebGlRenderingContext,
-    WebGlBuffer,
-    WebGlProgram,
-    WebGlTexture,
+    WebGlBuffer, WebGlProgram, WebGlRenderingContext, WebGlShader, WebGlTexture,
     WebGlUniformLocation,
-    WebGlShader,
 };
 
 #[wasm_bindgen]
@@ -50,12 +46,7 @@ void main() {
 }
 "#;
 
-    const VERTEX_DATA: [f32; 8] = [
-        -1.0, -1.0,
-        -1.0, 1.0,
-        1.0, -1.0,
-        1.0, 1.0,
-    ];
+    const VERTEX_DATA: [f32; 8] = [-1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0];
 
     pub fn new(canvas: &web_sys::HtmlCanvasElement) -> Result<Self, JsValue> {
         let context = canvas
@@ -100,7 +91,14 @@ void main() {
         };
 
         context.enable_vertex_attrib_array(position_attrib_loc as u32);
-        context.vertex_attrib_pointer_with_i32(position_attrib_loc as u32, 2, WebGlRenderingContext::FLOAT, false, 0, 0);
+        context.vertex_attrib_pointer_with_i32(
+            position_attrib_loc as u32,
+            2,
+            WebGlRenderingContext::FLOAT,
+            false,
+            0,
+            0,
+        );
 
         context.active_texture(WebGlRenderingContext::TEXTURE0);
         let texture = context.create_texture().ok_or("Unable to create texture")?;
@@ -137,17 +135,18 @@ void main() {
     }
 
     pub fn update_texture(&self, data: &[u8], width: i32, height: i32) -> Result<(), JsValue> {
-        self.context.tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
-            WebGlRenderingContext::TEXTURE_2D,
-            0,
-            WebGlRenderingContext::RGB as i32,
-            width,
-            height,
-            0,
-            WebGlRenderingContext::RGB,
-            WebGlRenderingContext::UNSIGNED_BYTE,
-            Some(data),
-        )
+        self.context
+            .tex_image_2d_with_i32_and_i32_and_i32_and_format_and_type_and_opt_u8_array(
+                WebGlRenderingContext::TEXTURE_2D,
+                0,
+                WebGlRenderingContext::RGB as i32,
+                width,
+                height,
+                0,
+                WebGlRenderingContext::RGB,
+                WebGlRenderingContext::UNSIGNED_BYTE,
+                Some(data),
+            )
     }
 
     pub fn resize(&self, width: i32, height: i32) {
@@ -155,17 +154,30 @@ void main() {
     }
 
     pub fn bind_all_objects(&self) {
-        self.context.enable_vertex_attrib_array(self.position_attrib_loc as u32);
-        self.context.vertex_attrib_pointer_with_i32(self.position_attrib_loc as u32, 2, WebGlRenderingContext::FLOAT, false, 0, 0);
-        self.context.bind_buffer(WebGlRenderingContext::ARRAY_BUFFER, Some(&self.vertex_buffer));
+        self.context
+            .enable_vertex_attrib_array(self.position_attrib_loc as u32);
+        self.context.vertex_attrib_pointer_with_i32(
+            self.position_attrib_loc as u32,
+            2,
+            WebGlRenderingContext::FLOAT,
+            false,
+            0,
+            0,
+        );
+        self.context.bind_buffer(
+            WebGlRenderingContext::ARRAY_BUFFER,
+            Some(&self.vertex_buffer),
+        );
         self.context.active_texture(WebGlRenderingContext::TEXTURE0);
-        self.context.bind_texture(WebGlRenderingContext::TEXTURE_2D, Some(&self.texture));
+        self.context
+            .bind_texture(WebGlRenderingContext::TEXTURE_2D, Some(&self.texture));
         self.context.use_program(Some(&self.program));
         self.context.uniform1i(Some(&self.sampler_uniform), 0);
     }
 
     pub fn draw(&self) {
-        self.context.draw_arrays(WebGlRenderingContext::TRIANGLE_STRIP, 0, 4);
+        self.context
+            .draw_arrays(WebGlRenderingContext::TRIANGLE_STRIP, 0, 4);
     }
 
     // Adapted from https://github.com/rustwasm/wasm-bindgen/tree/master/examples/webgl

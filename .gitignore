@@ -1,4 +1,9 @@
-/target
-Cargo.lock
-/www/vaii_sem_project.js
-/www/vaii_sem_project_bg.wasm
+/game/target
+/game/Cargo.lock
+/game/game.iml
+/server/target
+/server/Cargo.lock
+/server/server.iml
+/www/game.js
+/www/game_bg.wasm
+VAII-sem-project.iml

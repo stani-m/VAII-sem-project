@@ -1,20 +1,20 @@
-mod web_gl;
 mod color;
-mod logging;
 mod gfx;
+mod logging;
+mod web_gl;
 
-use web_gl::WebGLContext;
 use color::Color;
+use web_gl::WebGLContext;
 
+use nalgebra_glm as glm;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
+    platform::web::{WindowBuilderExtWebSys, WindowExtWebSys},
     window::WindowBuilder,
-    platform::web::{WindowExtWebSys, WindowBuilderExtWebSys},
 };
-use nalgebra_glm as glm;
 
 use instant::Instant;
 
@@ -47,7 +47,6 @@ pub fn main() -> Result<(), JsValue> {
     window.canvas().style().remove_property("height")?;
     window.canvas().set_width(width as u32);
     window.canvas().set_height(height as u32);
-
 
     let context = WebGLContext::new(&window.canvas())?;
     context.bind_all_objects();
@@ -91,15 +90,9 @@ pub fn main() -> Result<(), JsValue> {
         &glm::vec3(0.0, 0.0, 0.0),
         &glm::vec3(0.0, 1.0, 0f32),
     );
-    let projection = glm::perspective_fov_zo(
-        45_f32.to_radians(),
-        width as f32,
-        height as f32,
-        0.1,
-        100.0,
-    );
+    let projection =
+        glm::perspective_fov_zo(45_f32.to_radians(), width as f32, height as f32, 0.1, 100.0);
     let mut camera = projection * view;
-
 
     let program_start = Instant::now();
     let mut last_frame_time = program_start;
@@ -113,17 +106,19 @@ pub fn main() -> Result<(), JsValue> {
         match event {
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
-                window_id,
-            } if window_id == window.id() => *control_flow = ControlFlow::Exit,
+                ..
+            } => *control_flow = ControlFlow::Exit,
             Event::WindowEvent {
-                event: WindowEvent::KeyboardInput {input, .. }, ..
+                event: WindowEvent::KeyboardInput { input, .. },
+                ..
             } => {
                 if let Some(key) = input.virtual_keycode {
                     console_log!("{:?}", key);
                 }
             }
             Event::WindowEvent {
-                event: WindowEvent::Resized(_), ..
+                event: WindowEvent::Resized(_),
+                ..
             } => {
                 window.canvas().style().remove_property("width").unwrap();
                 window.canvas().style().remove_property("height").unwrap();
@@ -164,7 +159,10 @@ pub fn main() -> Result<(), JsValue> {
                     camera = projection * view;
                 }
 
-                model = glm::rotate_y(&model, delta_time.as_secs_f32() * -std::f32::consts::PI / 8.0);
+                model = glm::rotate_y(
+                    &model,
+                    delta_time.as_secs_f32() * -std::f32::consts::PI / 8.0,
+                );
                 let transform = camera * model;
 
                 framebuffer.clear(Color::BLACK);
@@ -173,11 +171,13 @@ pub fn main() -> Result<(), JsValue> {
                 gfx::draw_line_strip(&mut framebuffer, &back, &transform, Color::YELLOW);
                 gfx::draw_line_list(&mut framebuffer, &sides, &transform, Color::MAGENTA);
 
-                context.update_texture(
-                    framebuffer.as_slice(),
-                    framebuffer.width() as i32,
-                    framebuffer.height() as i32
-                ).unwrap();
+                context
+                    .update_texture(
+                        framebuffer.as_slice(),
+                        framebuffer.width() as i32,
+                        framebuffer.height() as i32,
+                    )
+                    .unwrap();
 
                 context.draw();
 
