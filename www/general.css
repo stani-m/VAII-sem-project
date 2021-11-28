@@ -33,6 +33,8 @@ h6 {
     padding: 10px;
     border: 2px solid blue;
     margin: 14px;
+    background: transparent;
+    cursor: pointer;
     color: blue;
     text-align: center;
     text-decoration: none;

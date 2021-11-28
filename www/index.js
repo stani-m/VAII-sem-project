@@ -8,7 +8,6 @@ window.onload = () => {
         let logOut = document.createElement("a")
         logOut.className = "button"
         logOut.innerHTML = "Log out"
-        logOut.style.cursor = "pointer"
         logOut.onclick = () => {
             sessionStorage.removeItem("logged in")
             location.reload()
