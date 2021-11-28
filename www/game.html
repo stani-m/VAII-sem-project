@@ -5,15 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Wire Racer: Game</title>
     <link rel="stylesheet" href="game.css">
-    <script type="module">
-        import {default as init} from './game.js';
-
-        async function run() {
-            await init('./game_bg.wasm');
-        }
-
-        run();
-    </script>
+    <script type="module" src="game_loader.js"></script>
 </head>
 <body>
 <canvas id="render_target"></canvas>

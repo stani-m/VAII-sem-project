@@ -45,7 +45,7 @@ h6 {
     border-color: blueviolet;
 }
 
-.button_box {
+#button_box {
     margin: auto;
     width: fit-content;
     width: -moz-fit-content;
