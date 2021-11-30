@@ -3,7 +3,7 @@ window.onload = () => {
     if (sessionStorage.getItem("logged in") === "true") {
         let manageAccount = document.createElement("a")
         manageAccount.className = "button"
-        manageAccount.href = ""
+        manageAccount.href = "manage_account.html"
         manageAccount.innerHTML = "Manage account"
         let logOut = document.createElement("a")
         logOut.className = "button"

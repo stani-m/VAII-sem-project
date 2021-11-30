@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Wire Racer: Manage account</title>
+    <link rel="stylesheet" href="general.css">
+    <script src="manage_account.js"></script>
+</head>
+<body>
+<div id="outer">
+    <div id="inner">
+        <h1>Manage account</h1>
+        <h2>Change username</h2>
+        <form autocomplete="off">
+            <label for="newUsername">New username:</label><br>
+            <input id="newUsername" type="text"><br>
+            <label for="password">Password:</label><br>
+            <input id="password" type="password"><br>
+            <button class="button" type="button" onclick="changeUsername()">Change</button><br>
+        </form>
+        <h2>Change password</h2>
+        <form autocomplete="off">
+            <label for="oldPassword">Old password:</label><br>
+            <input id="oldPassword" type="password"><br>
+            <label for="newPassword">New password:</label><br>
+            <input id="newPassword" type="password"><br>
+            <label for="repeatNewPassword">Repeat new password:</label><br>
+            <input id="repeatNewPassword" type="password"><br>
+            <button class="button" type="button" onclick="changePassword()">Change</button><br>
+        </form>
+        <h2>Delete account</h2>
+        <form>
+            <label for="deletePassword">Password:</label><br>
+            <input id="deletePassword" type="password"><br>
+            <button class="button" type="button" onclick="deleteAccount()">Delete</button><br>
+        </form>
+    </div>
+</div>
+</body>
+</html>

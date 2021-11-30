@@ -18,6 +18,9 @@ async fn main() -> tide::Result<()> {
     app.at("/").serve_file("../www/index.html")?;
     app.at("/sign-up").post(endpoints::sign_up);
     app.at("/log-in").post(endpoints::log_in);
+    app.at("/delete-account").post(endpoints::delete_account);
+    app.at("/change-username").post(endpoints::change_username);
+    app.at("/change-password").post(endpoints::change_password);
 
     app.at("/").serve_dir("../www")?;
     app.listen("0.0.0.0:8000").await?;
