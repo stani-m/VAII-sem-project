@@ -16,7 +16,7 @@ function changeUsername() {
             }
         }
         fetch("change-username", {
-            method: "POST",
+            method: "PUT",
             headers: {
                 "Accept": "application/json",
                 "Content-Type": "application/json"
@@ -58,7 +58,7 @@ function changePassword() {
                 }
             }
             fetch("change-password", {
-                method: "POST",
+                method: "PUT",
                 headers: {
                     "Accept": "application/json",
                     "Content-Type": "application/json"
@@ -82,7 +82,7 @@ function deleteAccount() {
     let password = document.getElementById("deletePassword").value
 
     fetch("delete-account", {
-        method: "POST",
+        method: "DELETE",
         headers: {
             "Accept": "application/json",
             "Content-Type": "application/json"
