@@ -8,18 +8,10 @@ edition = "2021"
 [lib]
 crate-type = ["cdylib"]
 
-[profile.dev]
-opt-level = 3
-debug = false
-debug-assertions = true
-overflow-checks = false
-lto = false
-panic = 'unwind'
-incremental = false
-codegen-units = 16
-rpath = false
-
 [profile.release]
+
+[profile.deploy]
+inherits = "release"
 lto = true
 
 [dependencies]
