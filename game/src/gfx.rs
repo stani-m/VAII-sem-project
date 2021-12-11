@@ -1,4 +1,5 @@
 use crate::color::Color;
+use crate::console_log;
 use itertools::Itertools;
 use nalgebra_glm as glm;
 use std::mem;
@@ -134,7 +135,14 @@ fn clip_lines(
     data.filter(|&(a, b)| {
         let a_w = a[3];
         let b_w = b[3];
-        !(0..3).any(|i| a[i].abs() > a_w && b[i].abs() > b_w)
+        !(0..3).any(|i| {
+            if a[i] > a_w && b[i] > b_w || -a[i] > a_w && -b[i] > b_w {
+                console_log!("clipped");
+                true
+            } else {
+                false
+            }
+        })
     })
 }
 
@@ -190,9 +198,19 @@ fn draw_line(
     let mut put_pixel_if_possible = |x: i32, y: i32, z: f32| {
         if width_range.contains(&x) && height_range.contains(&y) && depth_range.contains(&z) {
             let index = framebuffer.calculate_index(x as usize, y as usize);
-            let depth = unsafe { framebuffer.depth.get_unchecked_mut(index) };
+            let depth;
+            #[cfg(debug_assertions)] {
+                depth = framebuffer.depth.get_mut(index).unwrap();
+            }
+            #[cfg(not(debug_assertions))] {
+                depth = unsafe { framebuffer.depth.get_unchecked_mut(index) };
+            }
             if z <= *depth {
                 *depth = z;
+                #[cfg(debug_assertions)] {
+                    *framebuffer.color.get_mut(index).unwrap() = color;
+                }
+                #[cfg(not(debug_assertions))]
                 unsafe {
                     *framebuffer.color.get_unchecked_mut(index) = color;
                 }
@@ -206,11 +224,9 @@ fn draw_line(
             mem::swap(&mut y0, &mut y1);
             mem::swap(&mut z0, &mut z1);
         }
-        if x0 >= 0 && x0 < width as i32 {
-            for y in y0..=y1 {
-                put_pixel_if_possible(x0, y, z);
-                z += z_delta;
-            }
+        for y in y0..=y1 {
+            put_pixel_if_possible(x0, y, z);
+            z += z_delta;
         }
     } else {
         let m = rise as f32 / run as f32;

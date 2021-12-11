@@ -9,9 +9,11 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [profile.release]
+debug-assertions = true
 
 [profile.deploy]
 inherits = "release"
+debug-assertions = false
 lto = true
 
 [dependencies]
