@@ -76,50 +76,35 @@ impl Framebuffer {
     }
 }
 
-pub fn draw_line_strip(
+pub fn draw_line_list_indexed(
     framebuffer: &mut Framebuffer,
-    data: &[glm::Vec3],
+    vertexes: &[glm::Vec3],
+    indexes: &[u32],
     transform: &glm::Mat4x4,
     color: Color,
 ) {
-    let data = transform_data(data, transform);
-    let data = clip_lines(data.tuple_windows());
-    let data = perspective_divide(data);
-    let data = viewport_transform(
-        data,
+    let line_indexes = indexes.iter().tuples();
+    let vertexes = transform_data(vertexes, transform).collect_vec();
+    let line_indexes = clip_lines(&vertexes, line_indexes);
+    let vertexes = perspective_divide(vertexes.iter());
+    let vertexes = viewport_transform(
+        vertexes,
         framebuffer.width() as f32,
         framebuffer.height() as f32,
-    );
+    )
+    .collect_vec();
 
-    for (from, to) in data {
+    for (&from_i, &to_i) in line_indexes {
+        let from = vertexes[from_i as usize];
+        let to = vertexes[to_i as usize];
+
         let from = (from[0] as i32, from[1] as i32, from[2]);
         let to = (to[0] as i32, to[1] as i32, to[2]);
         draw_line(framebuffer, from, to, color);
     }
 }
 
-pub fn draw_line_list(
-    framebuffer: &mut Framebuffer,
-    data: &[glm::Vec3],
-    transform: &glm::Mat4x4,
-    color: Color,
-) {
-    let data = transform_data(data, transform);
-    let data = clip_lines(data.tuples());
-    let data = perspective_divide(data);
-    let data = viewport_transform(
-        data,
-        framebuffer.width() as f32,
-        framebuffer.height() as f32,
-    );
-
-    for (from, to) in data {
-        let from = (from[0] as i32, from[1] as i32, from[2]);
-        let to = (to[0] as i32, to[1] as i32, to[2]);
-        draw_line(framebuffer, from, to, color);
-    }
-}
-
+// TODO: Rewrite these functions to operate on iterator items instead of iterators
 fn transform_data<'a>(
     data: &'a [glm::Vec3],
     transform: &'a glm::Mat4x4,
@@ -128,54 +113,42 @@ fn transform_data<'a>(
         .map(move |point| transform * glm::vec4(point[0], point[1], point[2], 1.0))
 }
 
-// TODO: Rewrite these functions to operate on iterator items instead of iterators
-fn clip_lines(
-    data: impl Iterator<Item = (glm::Vec4, glm::Vec4)>,
-) -> impl Iterator<Item = (glm::Vec4, glm::Vec4)> {
-    data.filter(|&(a, b)| {
+fn clip_lines<'a>(
+    vertexes: &'a [glm::Vec4],
+    line_indexes: impl Iterator<Item = (&'a u32, &'a u32)> + 'a,
+) -> impl Iterator<Item = (&'a u32, &'a u32)> + 'a {
+    line_indexes.filter(|&(&a, &b)| {
+        let a = vertexes[a as usize];
+        let b = vertexes[b as usize];
         let a_w = a[3];
         let b_w = b[3];
-        !(0..3).any(|i| {
-            if a[i] > a_w && b[i] > b_w || -a[i] > a_w && -b[i] > b_w {
-                console_log!("clipped");
-                true
-            } else {
-                false
-            }
-        })
+        !(0..3).any(|i| a[i] > a_w && b[i] > b_w || -a[i] > a_w && -b[i] > b_w)
     })
 }
 
-fn perspective_divide(
-    data: impl Iterator<Item = (glm::Vec4, glm::Vec4)>,
-) -> impl Iterator<Item = (glm::Vec4, glm::Vec4)> {
-    data.map(|(a, b)| {
-        let a_w = a[3];
-        let b_w = b[3];
-        (a / a_w, b / b_w)
+fn perspective_divide<'a>(
+    vertexes: impl Iterator<Item = &'a glm::Vec4> + 'a,
+) -> impl Iterator<Item = glm::Vec4> + 'a {
+    vertexes.map(|&vertex| {
+        let w = vertex[3];
+        vertex / w
     })
 }
 
 fn viewport_transform(
-    data: impl Iterator<Item = (glm::Vec4, glm::Vec4)>,
+    data: impl Iterator<Item = glm::Vec4>,
     width: f32,
     height: f32,
-) -> impl Iterator<Item = (glm::Vec3, glm::Vec3)> {
+) -> impl Iterator<Item = glm::Vec3> {
     let x_screen_transform = width / 2.0;
     let y_screen_transform = height / 2.0;
 
-    data.map(move |(a, b)| {
-        let a = glm::vec3(
-            (a[0] + 1.0) * x_screen_transform,
-            (a[1] + 1.0) * y_screen_transform,
-            a[2],
-        );
-        let b = glm::vec3(
-            (b[0] + 1.0) * x_screen_transform,
-            (b[1] + 1.0) * y_screen_transform,
-            b[2],
-        );
-        (a, b)
+    data.map(move |vertex| {
+        glm::vec3(
+            (vertex[0] + 1.0) * x_screen_transform,
+            (vertex[1] + 1.0) * y_screen_transform,
+            vertex[2],
+        )
     })
 }
 
@@ -194,20 +167,23 @@ fn draw_line(
     let height = framebuffer.height();
     let width_range = 0..width as i32;
     let height_range = 0..height as i32;
-    let depth_range = 0.0..1.0;
+    let depth_range = 0.0..=1.0;
     let mut put_pixel_if_possible = |x: i32, y: i32, z: f32| {
         if width_range.contains(&x) && height_range.contains(&y) && depth_range.contains(&z) {
             let index = framebuffer.calculate_index(x as usize, y as usize);
             let depth;
-            #[cfg(debug_assertions)] {
+            #[cfg(debug_assertions)]
+            {
                 depth = framebuffer.depth.get_mut(index).unwrap();
             }
-            #[cfg(not(debug_assertions))] {
+            #[cfg(not(debug_assertions))]
+            {
                 depth = unsafe { framebuffer.depth.get_unchecked_mut(index) };
             }
             if z <= *depth {
                 *depth = z;
-                #[cfg(debug_assertions)] {
+                #[cfg(debug_assertions)]
+                {
                     *framebuffer.color.get_mut(index).unwrap() = color;
                 }
                 #[cfg(not(debug_assertions))]

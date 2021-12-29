@@ -2,6 +2,7 @@ mod color;
 mod gfx;
 mod logging;
 mod web_gl;
+mod model;
 
 use color::Color;
 use web_gl::WebGLContext;
@@ -17,6 +18,7 @@ use winit::{
 };
 
 use instant::Instant;
+use crate::model::Model;
 
 const RESOLUTION_SCALE: usize = 1;
 
@@ -56,34 +58,10 @@ pub fn main() -> Result<(), JsValue> {
         height as usize / RESOLUTION_SCALE,
     );
 
-    let front = [
-        glm::vec3(0.5, 0.5, -0.5),
-        glm::vec3(0.5, -0.5, -0.5),
-        glm::vec3(-0.5, -0.5, -0.5),
-        glm::vec3(-0.5, 0.5, -0.5),
-        glm::vec3(0.5, 0.5, -0.5),
-    ];
-
-    let back = [
-        glm::vec3(0.5, 0.5, 0.5),
-        glm::vec3(0.5, -0.5, 0.5),
-        glm::vec3(-0.5, -0.5, 0.5),
-        glm::vec3(-0.5, 0.5, 0.5),
-        glm::vec3(0.5, 0.5, 0.5),
-    ];
-
-    let sides = [
-        glm::vec3(0.5, 0.5, -0.5),
-        glm::vec3(0.5, 0.5, 0.5),
-        glm::vec3(-0.5, 0.5, -0.5),
-        glm::vec3(-0.5, 0.5, 0.5),
-        glm::vec3(-0.5, -0.5, -0.5),
-        glm::vec3(-0.5, -0.5, 0.5),
-        glm::vec3(0.5, -0.5, -0.5),
-        glm::vec3(0.5, -0.5, 0.5),
-    ];
-
-    let mut model = glm::identity();
+    let (donut, buffers, _) = gltf::import_slice(include_bytes!("../assets/TheDonut.glb")).unwrap();
+    let mut donut = Model::from(&donut, &buffers[0], Color::WHEAT);
+    donut.set_child_color("Icing", Color::DARK_CYAN);
+    donut.set_scale(&glm::vec3(16.0, 16.0, 16.0));
 
     let view = glm::look_at(
         &glm::vec3(1.0, 2.0, 3.0),
@@ -159,17 +137,15 @@ pub fn main() -> Result<(), JsValue> {
                     camera = projection * view;
                 }
 
-                model = glm::rotate_y(
-                    &model,
-                    delta_time.as_secs_f32() * -std::f32::consts::PI / 8.0,
-                );
-                let transform = camera * model;
+                donut.set_rotation(&glm::quat_rotate(
+                    &donut.rotation(),
+                    delta_time.as_secs_f32() / 8.0,
+                    &glm::vec3(0.0, 1.0, 0.0),
+                ));
 
                 framebuffer.clear(Color::BLACK);
 
-                gfx::draw_line_strip(&mut framebuffer, &front, &transform, Color::CYAN);
-                gfx::draw_line_strip(&mut framebuffer, &back, &transform, Color::YELLOW);
-                gfx::draw_line_list(&mut framebuffer, &sides, &transform, Color::MAGENTA);
+                donut.draw(&mut framebuffer, &camera, &buffers[0]);
 
                 context
                     .update_texture(
