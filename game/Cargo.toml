@@ -14,7 +14,8 @@ debug-assertions = true
 [profile.deploy]
 inherits = "release"
 debug-assertions = false
-lto = true
+codegen-units = 1
+lto = "fat"
 
 [dependencies]
 wasm-bindgen = "0.2.78"
