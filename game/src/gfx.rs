@@ -1,9 +1,10 @@
-use crate::color::Color;
-use crate::console_log;
-use itertools::Itertools;
-use nalgebra_glm as glm;
 use std::mem;
 use std::ops::{Index, IndexMut};
+
+use itertools::Itertools;
+use nalgebra_glm as glm;
+
+use crate::color::Color;
 
 pub struct Framebuffer {
     color: Vec<Color>,

@@ -68,7 +68,11 @@ impl User {
         Ok(())
     }
 
-    pub async fn change_username(&self, new_username: &str, pool: &MySqlPool) -> Result<(), sqlx::Error> {
+    pub async fn change_username(
+        &self,
+        new_username: &str,
+        pool: &MySqlPool,
+    ) -> Result<(), sqlx::Error> {
         sqlx::query!(
             "UPDATE users SET username = ? WHERE username = ? AND password = ?",
             new_username,
@@ -80,7 +84,11 @@ impl User {
         Ok(())
     }
 
-    pub async fn change_password(&self, new_password: &str, pool: &MySqlPool) -> Result<(), sqlx::Error> {
+    pub async fn change_password(
+        &self,
+        new_password: &str,
+        pool: &MySqlPool,
+    ) -> Result<(), sqlx::Error> {
         sqlx::query!(
             "UPDATE users SET password = ? WHERE username = ? AND password = ?",
             new_password,

@@ -1,12 +1,4 @@
-mod color;
-mod gfx;
-mod logging;
-mod web_gl;
-mod model;
-
-use color::Color;
-use web_gl::WebGLContext;
-
+use instant::Instant;
 use nalgebra_glm as glm;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -17,8 +9,16 @@ use winit::{
     window::WindowBuilder,
 };
 
-use instant::Instant;
+use color::Color;
+use web_gl::WebGLContext;
+
 use crate::model::Model;
+
+mod color;
+mod gfx;
+mod logging;
+mod model;
+mod web_gl;
 
 const RESOLUTION_SCALE: usize = 1;
 

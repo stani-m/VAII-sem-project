@@ -1,6 +1,7 @@
-use crate::models::User;
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
+
+use crate::models::User;
 
 #[derive(Serialize)]
 struct Response<T: Serialize> {

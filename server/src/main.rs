@@ -1,8 +1,9 @@
-mod endpoints;
-mod models;
+use std::env;
 
 use sqlx::mysql::MySqlPoolOptions;
-use std::env;
+
+mod endpoints;
+mod models;
 
 // docker run --name mariadbtest -e MYSQL_ROOT_PASSWORD=mypass -p 3306:3306 -d docker.io/library/mariadb:10.7
 #[async_std::main]

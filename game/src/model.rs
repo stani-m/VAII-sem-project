@@ -5,7 +5,7 @@ use gltf::json::accessor::ComponentType;
 use itertools::Itertools;
 use nalgebra_glm as glm;
 
-use crate::{Color, gfx};
+use crate::{gfx, Color};
 
 pub struct BufferView {
     offset: usize,
