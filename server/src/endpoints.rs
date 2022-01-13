@@ -33,25 +33,29 @@ impl<T: Serialize> From<Response<T>> for tide::Response {
 }
 
 pub async fn sign_up(mut request: tide::Request<MySqlPool>) -> tide::Result {
-    let user: User = request.body_json().await?;
+    let mut user: User = request.body_json().await?;
     let pool = request.state();
     if user.username_in_use(pool).await? {
         Ok(Response::error("Username is already in use.").into())
     } else if !user.is_valid() {
         Ok(Response::error("Invalid request.").into())
     } else {
+        user.generate_hash();
         user.save(pool).await?;
         Ok(Response::ok(()).into())
     }
 }
 
 pub async fn log_in(mut request: tide::Request<MySqlPool>) -> tide::Result {
-    let user: User = request.body_json().await?;
-    if user.has_correct_password(request.state()).await? {
-        Ok(Response::ok(()).into())
-    } else {
-        Ok(Response::error("Incorrect username or password.").into())
+    let mut user: User = request.body_json().await?;
+    let pool = request.state();
+    if user.username_in_use(pool).await? {
+        user.load_hash(pool).await?;
+        if user.verify() {
+            return Ok(Response::ok(()).into());
+        }
     }
+    Ok(Response::error("Incorrect username or password.").into())
 }
 
 pub async fn change_username(mut request: tide::Request<MySqlPool>) -> tide::Result {
@@ -62,10 +66,14 @@ pub async fn change_username(mut request: tide::Request<MySqlPool>) -> tide::Res
         user: User,
     }
 
-    let Data { new_username, user } = request.body_json().await?;
+    let Data {
+        new_username,
+        mut user,
+    } = request.body_json().await?;
     let pool = request.state();
 
-    if user.has_correct_password(pool).await? {
+    user.load_hash(pool).await?;
+    if user.verify() {
         user.change_username(&new_username, pool).await?;
         Ok(Response::ok(()).into())
     } else {
@@ -81,10 +89,14 @@ pub async fn change_password(mut request: tide::Request<MySqlPool>) -> tide::Res
         user: User,
     }
 
-    let Data { new_password, user } = request.body_json().await?;
+    let Data {
+        new_password,
+        mut user,
+    } = request.body_json().await?;
     let pool = request.state();
 
-    if user.has_correct_password(pool).await? {
+    user.load_hash(pool).await?;
+    if user.verify() {
         user.change_password(&new_password, pool).await?;
         Ok(Response::ok(()).into())
     } else {
@@ -93,9 +105,10 @@ pub async fn change_password(mut request: tide::Request<MySqlPool>) -> tide::Res
 }
 
 pub async fn delete_account(mut request: tide::Request<MySqlPool>) -> tide::Result {
-    let user: User = request.body_json().await?;
+    let mut user: User = request.body_json().await?;
     let pool = request.state();
-    if user.has_correct_password(pool).await? {
+    user.load_hash(pool).await?;
+    if user.verify() {
         user.delete(pool).await?;
         Ok(Response::ok(()).into())
     } else {

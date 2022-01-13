@@ -3,39 +3,12 @@ use sqlx::MySqlPool;
 
 #[derive(Deserialize)]
 pub struct User {
-    pub username: String,
-    pub password: String,
+    username: String,
+    password: Option<String>,
+    password_hash: Option<String>,
 }
 
 impl User {
-    pub async fn create(
-        username: &str,
-        password: &str,
-        pool: &MySqlPool,
-    ) -> Result<Self, sqlx::Error> {
-        let query_result = sqlx::query!(
-            "INSERT INTO users(username, password) VALUES(?, ?)",
-            username,
-            password,
-        )
-        .execute(pool)
-        .await?;
-        if query_result.rows_affected() != 1 {
-            panic!("Something very bad has gone very wrong!");
-        }
-        Ok(Self::from_username(username, pool).await?.unwrap())
-    }
-
-    pub async fn from_username(
-        username: &str,
-        pool: &MySqlPool,
-    ) -> Result<Option<Self>, sqlx::Error> {
-        let user = sqlx::query_as!(Self, "SELECT * FROM users WHERE username = ?", username)
-            .fetch_optional(pool)
-            .await?;
-        Ok(user)
-    }
-
     pub fn is_valid_username(username: &str) -> bool {
         !username.is_empty() && username.len() <= 20
     }
@@ -45,7 +18,8 @@ impl User {
     }
 
     pub fn is_valid(&self) -> bool {
-        Self::is_valid_username(&self.username) && Self::is_valid_password(&self.password)
+        Self::is_valid_username(&self.username)
+            && Self::is_valid_password(self.password.as_ref().expect("Password missing!"))
     }
 
     pub async fn username_in_use(&self, pool: &MySqlPool) -> Result<bool, sqlx::Error> {
@@ -55,16 +29,45 @@ impl User {
         Ok(result.is_some())
     }
 
-    pub async fn has_correct_password(&self, pool: &MySqlPool) -> Result<bool, sqlx::Error> {
-        if let Some(user) = User::from_username(&self.username, pool).await? {
-            Ok(self.password == user.password)
-        } else {
-            Ok(false)
-        }
+    pub fn generate_hash(&mut self) {
+        self.password_hash = Some(
+            bcrypt::hash(
+                self.password.as_ref().expect("Password missing!"),
+                bcrypt::DEFAULT_COST,
+            )
+            .unwrap(),
+        );
+    }
+
+    pub async fn load_hash(&mut self, pool: &MySqlPool) -> Result<(), sqlx::Error> {
+        self.password_hash = Some(
+            sqlx::query!(
+                "SELECT password_hash FROM users WHERE username = ?",
+                self.username
+            )
+            .fetch_one(pool)
+            .await?
+            .password_hash,
+        );
+        Ok(())
+    }
+
+    pub fn verify(&self) -> bool {
+        bcrypt::verify(
+            self.password.as_ref().expect("Password missing!"),
+            &self.password_hash.as_ref().expect("Password missing!"),
+        )
+        .unwrap()
     }
 
     pub async fn save(&self, pool: &MySqlPool) -> Result<(), sqlx::Error> {
-        Self::create(&self.username, &self.password, pool).await?;
+        sqlx::query!(
+            "INSERT INTO users(username, password_hash) VALUES(?, ?)",
+            self.username,
+            self.password_hash.as_ref().expect("Password hash missing!")
+        )
+        .execute(pool)
+        .await?;
         Ok(())
     }
 
@@ -74,10 +77,10 @@ impl User {
         pool: &MySqlPool,
     ) -> Result<(), sqlx::Error> {
         sqlx::query!(
-            "UPDATE users SET username = ? WHERE username = ? AND password = ?",
+            "UPDATE users SET username = ? WHERE username = ? AND password_hash = ?",
             new_username,
             self.username,
-            self.password,
+            self.password_hash.as_ref().expect("Password hash missing!"),
         )
         .execute(pool)
         .await?;
@@ -85,26 +88,28 @@ impl User {
     }
 
     pub async fn change_password(
-        &self,
+        &mut self,
         new_password: &str,
         pool: &MySqlPool,
     ) -> Result<(), sqlx::Error> {
+        let new_hash = bcrypt::hash(new_password, bcrypt::DEFAULT_COST).unwrap();
         sqlx::query!(
-            "UPDATE users SET password = ? WHERE username = ? AND password = ?",
-            new_password,
+            "UPDATE users SET password_hash = ? WHERE username = ? AND password_hash = ?",
+            new_hash,
             self.username,
-            self.password,
+            self.password_hash.as_ref().expect("Password hash missing!"),
         )
         .execute(pool)
         .await?;
+        self.password_hash = Some(new_hash);
         Ok(())
     }
 
     pub async fn delete(&self, pool: &MySqlPool) -> Result<(), sqlx::Error> {
         sqlx::query!(
-            "DELETE FROM users WHERE username = ? AND password = ?",
+            "DELETE FROM users WHERE username = ? AND password_hash = ?",
             self.username,
-            self.password,
+            self.password_hash.as_ref().expect("Password hash missing!"),
         )
         .execute(pool)
         .await?;
