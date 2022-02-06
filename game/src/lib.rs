@@ -1,7 +1,7 @@
 use instant::Instant;
 use nalgebra_glm as glm;
-use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
+use wasm_bindgen::prelude::*;
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
@@ -61,8 +61,10 @@ pub fn main() -> Result<(), JsValue> {
     let (donut, buffers, _) = gltf::import_slice(include_bytes!("../assets/TheDonut.glb")).unwrap();
     let mut donut = Model::from(&donut, &buffers[0], Color::WHEAT);
     donut.set_child_color("Icing", Color::DARK_CYAN);
-    donut.set_scale(&glm::vec3(16.0, 16.0, 16.0));
+    // donut.set_scale(&glm::vec3(16.0, 16.0, 16.0));
+    // donut.set_translation(&glm::vec3(0.0, 0.0, 0.0));
 
+    let zoom = glm::scaling(&glm::vec3(16.0, 16.0, 16.0));
     let view = glm::look_at(
         &glm::vec3(1.0, 2.0, 3.0),
         &glm::vec3(0.0, 0.0, 0.0),
@@ -70,7 +72,7 @@ pub fn main() -> Result<(), JsValue> {
     );
     let projection =
         glm::perspective_fov_zo(45_f32.to_radians(), width as f32, height as f32, 0.1, 100.0);
-    let mut camera = projection * view;
+    let mut camera = projection * view * zoom;
 
     let program_start = Instant::now();
     let mut last_frame_time = program_start;
@@ -134,7 +136,7 @@ pub fn main() -> Result<(), JsValue> {
                         0.1,
                         100.0,
                     );
-                    camera = projection * view;
+                    camera = projection * view * zoom;
                 }
 
                 donut.set_rotation(&glm::quat_rotate(
