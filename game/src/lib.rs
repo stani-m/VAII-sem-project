@@ -1,7 +1,9 @@
 use instant::Instant;
 use nalgebra_glm as glm;
-use wasm_bindgen::JsCast;
+use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
+use wasm_bindgen::JsCast;
+use winit::event::{ElementState, MouseButton, VirtualKeyCode};
 use winit::{
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
@@ -9,15 +11,19 @@ use winit::{
     window::WindowBuilder,
 };
 
+use crate::cube::Cube;
+use crate::game::Game;
 use color::Color;
 use web_gl::WebGLContext;
 
 use crate::model::Model;
 
 mod color;
+mod cube;
+mod game;
 mod gfx;
 mod logging;
-mod model;
+pub mod model;
 mod web_gl;
 
 const RESOLUTION_SCALE: usize = 1;
@@ -30,14 +36,20 @@ pub fn main() -> Result<(), JsValue> {
         .get_element_by_id("render_target")
         .ok_or("Render target not found")?
         .dyn_into::<web_sys::HtmlCanvasElement>()?;
-    let fps = document
-        .get_element_by_id("fps_number")
+    let fps_indicator = document
+        .get_element_by_id("fps")
         .ok_or("Fps indicator not found")?
         .dyn_into::<web_sys::HtmlSpanElement>()?;
+    let score_indicator = document
+        .get_element_by_id("score")
+        .ok_or("Score indicator not found")?
+        .dyn_into::<web_sys::HtmlSpanElement>()?;
+    let session_storage = html_window.session_storage()?.unwrap();
 
     let pixel_ratio = html_window.device_pixel_ratio();
     let mut width = canvas.client_width() as f64 * pixel_ratio;
     let mut height = canvas.client_height() as f64 * pixel_ratio;
+    let mut mouse_x = 0.0;
 
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
@@ -58,16 +70,15 @@ pub fn main() -> Result<(), JsValue> {
         height as usize / RESOLUTION_SCALE,
     );
 
-    let (donut, buffers, _) = gltf::import_slice(include_bytes!("../assets/TheDonut.glb")).unwrap();
-    let mut donut = Model::from(&donut, &buffers[0], Color::WHEAT);
-    donut.set_child_color("Icing", Color::DARK_CYAN);
-    // donut.set_scale(&glm::vec3(16.0, 16.0, 16.0));
-    // donut.set_translation(&glm::vec3(0.0, 0.0, 0.0));
+    let mut game = Game::start(15, score_indicator);
 
-    let zoom = glm::scaling(&glm::vec3(16.0, 16.0, 16.0));
+    let mut pressed_keys = HashSet::new();
+    let mut just_pressed_keys = HashSet::new();
+
+    let zoom = glm::scaling(&glm::vec3(1.0, 1.0, 1.0));
     let view = glm::look_at(
-        &glm::vec3(1.0, 2.0, 3.0),
-        &glm::vec3(0.0, 0.0, 0.0),
+        &glm::vec3(0.0, 2.0, 4.0),
+        &glm::vec3(0.0, 0.5, 0.0),
         &glm::vec3(0.0, 1.0, 0f32),
     );
     let projection =
@@ -93,8 +104,29 @@ pub fn main() -> Result<(), JsValue> {
                 ..
             } => {
                 if let Some(key) = input.virtual_keycode {
-                    console_log!("{:?}", key);
+                    if input.state == ElementState::Pressed {
+                        if pressed_keys.insert(key) {
+                            just_pressed_keys.insert(key);
+                        }
+                    } else {
+                        pressed_keys.remove(&key);
+                    }
                 }
+            }
+            Event::WindowEvent {
+                event: WindowEvent::MouseInput { state, button, .. },
+                ..
+            } => {
+                if state == ElementState::Pressed && button == MouseButton::Left {
+                    let location = (mouse_x / (width / 3.0)) as i8;
+                    game.move_to(location);
+                }
+            }
+            Event::WindowEvent {
+                event: WindowEvent::CursorMoved { position, .. },
+                ..
+            } => {
+                mouse_x = position.x;
             }
             Event::WindowEvent {
                 event: WindowEvent::Resized(_),
@@ -110,7 +142,7 @@ pub fn main() -> Result<(), JsValue> {
 
                 let current_second = since_program_start.as_secs();
                 if current_second != last_second {
-                    fps.set_inner_text(&frames.to_string());
+                    fps_indicator.set_inner_text(&frames.to_string());
                     last_second = current_second;
                     frames = 0;
                 }
@@ -139,15 +171,26 @@ pub fn main() -> Result<(), JsValue> {
                     camera = projection * view * zoom;
                 }
 
-                donut.set_rotation(&glm::quat_rotate(
-                    &donut.rotation(),
-                    delta_time.as_secs_f32() / 8.0,
-                    &glm::vec3(0.0, 1.0, 0.0),
-                ));
-
                 framebuffer.clear(Color::BLACK);
 
-                donut.draw(&mut framebuffer, &camera, &buffers[0]);
+                if just_pressed_keys.contains(&VirtualKeyCode::A)
+                    || just_pressed_keys.contains(&VirtualKeyCode::Left)
+                {
+                    game.move_left();
+                }
+                if just_pressed_keys.contains(&VirtualKeyCode::D)
+                    || just_pressed_keys.contains(&VirtualKeyCode::Right)
+                {
+                    game.move_right();
+                }
+                game.advance(&delta_time);
+                game.draw(&mut framebuffer, &camera);
+                if game.check_collision() {
+                    session_storage
+                        .set_item("score", &game.score().to_string())
+                        .unwrap();
+                    html_window.location().replace("/game_over.html").unwrap();
+                }
 
                 context
                     .update_texture(
@@ -160,6 +203,7 @@ pub fn main() -> Result<(), JsValue> {
                 context.draw();
 
                 last_frame_time = current_frame_time;
+                just_pressed_keys.clear();
             }
             _ => (),
         }

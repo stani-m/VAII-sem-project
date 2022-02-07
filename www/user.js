@@ -35,6 +35,7 @@ function signUp() {
                 if (response.code === 0) {
                     sessionStorage.setItem("logged in", "true")
                     sessionStorage.setItem("username", username)
+                    sessionStorage.setItem("password", password)
                     location.replace("/")
                 } else {
                     alert(response.body)
@@ -61,6 +62,7 @@ function logIn() {
             if (response.code === 0) {
                 sessionStorage.setItem("logged in", "true")
                 sessionStorage.setItem("username", username)
+                sessionStorage.setItem("password", password)
                 location.replace("/")
             } else {
                 alert(response.body)

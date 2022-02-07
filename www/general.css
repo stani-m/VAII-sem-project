@@ -8,7 +8,7 @@ body {
 
 #outer {
     margin: 0 auto;
-    max-width: 1000px;
+    max-width: 60em;
 }
 
 #inner {
@@ -28,11 +28,15 @@ h6 {
     color: blue;
 }
 
+p {
+    text-align: center;
+}
+
 .button {
     display: block;
-    padding: 10px;
-    border: 2px solid blue;
-    margin: 14px;
+    padding: 0.6em;
+    border: 0.15em solid blue;
+    margin: 0.8em;
     background: transparent;
     cursor: pointer;
     color: blue;
@@ -54,7 +58,7 @@ h6 {
 }
 
 table {
-    margin: 10px auto;
+    margin: 0.6em auto;
     width: 95%;
     border-collapse: separate;
     border-spacing: 0;
@@ -62,33 +66,33 @@ table {
 
 thead {
     position: sticky;
-    top: 10px;
+    top: 0.6em;
     background-color: #232323;
     text-align: center;
 }
 
 thead tr:first-child th {
-    border-top-width: 2px;
+    border-top-width: 0.15em;
 }
 
 thead tr:last-child th {
-    border-bottom-width: 2px;
+    border-bottom-width: 0.15em;
 }
 
 th {
-    border: 1px solid magenta;
+    border: 0.07em solid magenta;
 }
 
 th:first-child, td:first-child {
-    border-left-width: 2px;
+    border-left-width: 0.15em;
 }
 
 th:last-child, td:last-child {
-    border-right-width: 2px;
+    border-right-width: 0.15em;
 }
 
 tbody {
-    bottom: 10px;
+    bottom: 0.6em;
 }
 
 tbody tr:nth-child(odd) td {
@@ -99,7 +103,7 @@ tbody tr:nth-child(even) td {
     background-color: #4b4b4b;
 }
 
-table td:first-child, td:last-child, th:first-child, th:last-child {
+table td:not(:nth-child(2)), th:not(:nth-child(2)) {
     text-align: center;
     width: 1%;
     white-space: nowrap;
@@ -110,7 +114,7 @@ tbody tr:first-child td {
 }
 
 tbody tr:last-child td {
-    border-bottom-width: 2px;
+    border-bottom-width: 0.15em;
 }
 
 tbody tr:hover td {
@@ -119,5 +123,5 @@ tbody tr:hover td {
 }
 
 td {
-    border: 1px solid darkcyan;
+    border: 0.07em solid darkcyan;
 }

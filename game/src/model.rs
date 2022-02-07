@@ -144,16 +144,16 @@ impl Model {
         }
     }
 
-    pub fn set_translation(&mut self, translation: &glm::Vec3) {
-        self.translation = *translation;
+    pub fn set_translation(&mut self, translation: glm::Vec3) {
+        self.translation = translation;
     }
 
-    pub fn set_rotation(&mut self, rotation: &glm::Quat) {
-        self.rotation = *rotation;
+    pub fn set_rotation(&mut self, rotation: glm::Quat) {
+        self.rotation = rotation;
     }
 
-    pub fn set_scale(&mut self, scale: &glm::Vec3) {
-        self.scale = *scale;
+    pub fn set_scale(&mut self, scale: glm::Vec3) {
+        self.scale = scale;
     }
 
     pub fn translation(&self) -> glm::Vec3 {

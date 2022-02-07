@@ -3,14 +3,17 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Wire Racer: Game</title>
+    <title>Cube Dodger: Game</title>
     <link rel="stylesheet" href="game.css">
     <script type="module" src="game_loader.js"></script>
 </head>
 <body>
 <canvas id="render_target"></canvas>
 <div id="top_left">
-    <p id="fps">FPS: <span id="fps_number">60</span></p>
+    <p class="indicators">
+        SCORE: <span id="score">0</span><br>
+        FPS: <span id="fps">60</span>
+    </p>
 </div>
 </body>
 </html>

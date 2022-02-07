@@ -22,6 +22,8 @@ async fn main() -> tide::Result<()> {
     app.at("/change-username").put(endpoints::change_username);
     app.at("/change-password").put(endpoints::change_password);
     app.at("/delete-account").delete(endpoints::delete_account);
+    app.at("/submit-run").post(endpoints::submit_run);
+    app.at("/get-runs").post(endpoints::get_runs);
 
     app.at("/").serve_dir("../www")?;
     app.listen("0.0.0.0:8000").await?;

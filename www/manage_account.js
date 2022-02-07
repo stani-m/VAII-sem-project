@@ -6,13 +6,11 @@ function changeUsername() {
     } else if (newUsername.length > 20) {
         alert("New username can contain at most 20 characters.")
     } else {
-        let password = document.getElementById("password").value
-
         let body = {
             newUsername,
             user: {
                 username: sessionStorage.getItem("username"),
-                password
+                password: sessionStorage.getItem("password")
             }
         }
         fetch("change-username", {

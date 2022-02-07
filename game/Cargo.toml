@@ -26,6 +26,11 @@ nalgebra-glm = "0.15.0"
 itertools = "0.10.1"
 instant = { version = "0.1.11", features = [ 'wasm-bindgen'] }
 gltf = { version = "0.16", features = ['names'] }
+rand = "0.8"
+
+[dependencies.getrandom]
+version = "*"
+features = ['js']
 
 [dependencies.web-sys]
 version = "0.3.55"
@@ -57,4 +62,6 @@ features = [
   'WebGlTexture',
   'WebGlUniformLocation',
   'HtmlSpanElement',
+  'Storage',
+  'Location',
 ]

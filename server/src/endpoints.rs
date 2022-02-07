@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sqlx::MySqlPool;
 
-use crate::models::User;
+use crate::models::{Run, User};
 
 #[derive(Serialize)]
 struct Response<T: Serialize> {
@@ -114,4 +114,57 @@ pub async fn delete_account(mut request: tide::Request<MySqlPool>) -> tide::Resu
     } else {
         Ok(Response::error("Incorrect password.").into())
     }
+}
+
+pub async fn submit_run(mut request: tide::Request<MySqlPool>) -> tide::Result {
+    #[derive(Deserialize)]
+    struct Data {
+        user: User,
+        run: Run,
+    }
+
+    let Data { mut user, mut run } = request.body_json().await?;
+    let pool = request.state();
+    user.load_hash(pool).await?;
+    if !user.verify() {
+        Ok(Response::error("Invalid user.").into())
+    } else {
+        run.generate_time();
+        run.submit_for_user(&user, pool).await?;
+        Ok(Response::ok(()).into())
+    }
+}
+
+pub async fn get_runs(mut request: tide::Request<MySqlPool>) -> tide::Result {
+    #[derive(Deserialize)]
+    struct Data {
+        user: Option<User>,
+    }
+
+    let Data { user } = request.body_json().await?;
+    let pool = request.state();
+
+    let runs = if let Some(user) = user {
+        user.fetch_runs(pool).await?
+    } else {
+        Run::fetch_all(pool).await?
+    };
+
+    #[derive(Serialize)]
+    struct OutputRun {
+        username: String,
+        score: u32,
+        time: String,
+    }
+
+    let mut output_runs = Vec::with_capacity(runs.len());
+    for run in &runs {
+        output_runs.push(OutputRun {
+            username: run.get_username(pool).await?,
+            score: run.score(),
+            time: run.time().unwrap().to_string(),
+        });
+    }
+
+    Ok(Response::ok(output_runs).into())
 }
