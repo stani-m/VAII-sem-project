@@ -125,9 +125,23 @@ impl User {
             id,
             id
         )
-            .fetch_all(pool)
-            .await?;
+        .fetch_all(pool)
+        .await?;
         Ok(messages)
+    }
+
+    pub async fn has_blocked(&self, other: &User, pool: &MySqlPool) -> Result<bool, sqlx::Error> {
+        let blocked_ids: Vec<u32> = sqlx::query!(
+            "SELECT blocked_user_id FROM blocks WHERE blocking_user_id = (SELECT id FROM users WHERE username = ?)",
+            self.username,
+        )
+            .fetch_all(pool)
+            .await?
+            .iter()
+            .map(|data| data.blocked_user_id)
+            .collect();
+
+        Ok(blocked_ids.contains(&other.id(pool).await?))
     }
 
     pub async fn id(&self, pool: &MySqlPool) -> Result<u32, sqlx::Error> {
@@ -222,7 +236,12 @@ pub struct Message {
 }
 
 impl Message {
-    pub fn new(from_user_id: u32, to_user_id: u32, time: chrono::NaiveDateTime, text: String) -> Message {
+    pub fn new(
+        from_user_id: u32,
+        to_user_id: u32,
+        time: chrono::NaiveDateTime,
+        text: String,
+    ) -> Message {
         Self {
             id: 0,
             from_user_id,
@@ -273,5 +292,23 @@ impl Message {
 
     pub fn text(&self) -> &str {
         &self.text
+    }
+}
+
+pub struct Block {
+    pub blocking_user_id: u32,
+    pub blocked_user_id: u32,
+}
+
+impl Block {
+    pub async fn save(&self, pool: &MySqlPool) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            "INSERT INTO blocks(blocking_user_id, blocked_user_id) VALUES(?, ?)",
+            self.blocking_user_id,
+            self.blocked_user_id
+        )
+        .execute(pool)
+        .await?;
+        Ok(())
     }
 }

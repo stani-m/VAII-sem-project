@@ -24,6 +24,10 @@ window.onload = async () => {
                         let recipient = message.recipient
                         let time = message.time
                         let message_text = message.text
+                        let otherUser = sender
+                        if (sender === username) {
+                            otherUser = recipient
+                        }
                         if ((sender === username && message.showSender)
                             || (recipient === username && message.showRecipient)) {
                             let message = document.createElement("div")
@@ -49,6 +53,31 @@ window.onload = async () => {
                             let block = document.createElement("a")
                             block.className = "button"
                             block.innerText = "Block"
+                            block.onclick = () => {
+                                fetch("block", {
+                                    method: "POST",
+                                    headers: {
+                                        "Accept": "application/json",
+                                        "Content-Type": "application/json"
+                                    },
+                                    body: JSON.stringify({
+                                        blockingUser: {
+                                            username,
+                                            password: sessionStorage.getItem("password")
+                                        },
+                                        blockedUser: {
+                                            username: otherUser
+                                        }
+                                    })
+                                })
+                                    .then(response => response.text())
+                                    .then(text => {
+                                        let response = JSON.parse(text)
+                                        if (response.code !== 0) {
+                                            alert(response.body)
+                                        }
+                                    })
+                            }
                             message.appendChild(block)
                             inner.appendChild(message)
                         }

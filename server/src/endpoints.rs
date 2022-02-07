@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::types::chrono;
 use sqlx::MySqlPool;
 
-use crate::models::{Message, Run, User};
+use crate::models::{Block, Message, Run, User};
 
 #[derive(Serialize)]
 struct Response<T: Serialize> {
@@ -188,6 +188,8 @@ pub async fn send_message(mut request: tide::Request<MySqlPool>) -> tide::Result
         Ok(Response::error("Message text too long.").into())
     } else if !to.username_in_use(pool).await? {
         Ok(Response::error("Recipient does not exist.").into())
+    } else if to.has_blocked(&from, pool).await? {
+        Ok(Response::error("Recipient has blocked you.").into())
     } else {
         let message = Message::new(
             from.id(pool).await?,
@@ -235,5 +237,35 @@ pub async fn get_messages(mut request: tide::Request<MySqlPool>) -> tide::Result
         }
 
         Ok(Response::ok(output_messages).into())
+    }
+}
+
+pub async fn block(mut request: tide::Request<MySqlPool>) -> tide::Result {
+    #[derive(Deserialize)]
+    struct Data {
+        #[serde(rename = "blockingUser")]
+        blocking_user: User,
+        #[serde(rename = "blockedUser")]
+        blocked_user: User,
+    }
+
+    let Data {
+        mut blocking_user,
+        blocked_user,
+    } = request.body_json().await?;
+    let pool = request.state();
+
+    blocking_user.load_hash(pool).await?;
+    if !blocking_user.verify() {
+        Ok(Response::error("Invalid user credentials!").into())
+    } else if !blocked_user.username_in_use(pool).await? {
+        Ok(Response::error("Blocked user does not exist!").into())
+    } else {
+        let block = Block {
+            blocking_user_id: blocking_user.id(pool).await?,
+            blocked_user_id: blocked_user.id(pool).await?,
+        };
+        block.save(pool).await?;
+        Ok(Response::ok(()).into())
     }
 }

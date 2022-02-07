@@ -26,6 +26,7 @@ async fn main() -> tide::Result<()> {
     app.at("/get-runs").post(endpoints::get_runs);
     app.at("/message").post(endpoints::send_message);
     app.at("/get-messages").post(endpoints::get_messages);
+    app.at("/block").post(endpoints::block);
 
     app.at("/").serve_dir("../www")?;
 
