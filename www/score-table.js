@@ -1,5 +1,4 @@
-window.addEventListener("load", async () => {
-    let score_table = document.getElementById("full_score_table")
+async function fillTable(table, user = null) {
     let thead = document.createElement("thead")
     let tr = document.createElement("tr")
     thead.appendChild(tr)
@@ -16,24 +15,37 @@ window.addEventListener("load", async () => {
     time.innerText = "Time"
     tr.appendChild(time)
 
-    score_table.innerText = ""
-    score_table.appendChild(thead)
+    table.innerText = ""
+    table.appendChild(thead)
 
-    let runs = await fetchRuns();
-    runs = runs.sort((a, b) => b.score - a.score)
+    let runs = await fetchRuns(user);
+    runs.sort((a, b) => b.score - a.score)
+    let rankedUsers = new Set
     let current_place = 1;
     let current_score = runs[0].score
     let run_elements = runs.map((run) => {
-        if (run.score < current_score) {
-            current_place++
-            current_score = run.score
+        if (user !== null || !rankedUsers.has(run.username)) {
+            if (run.score < current_score) {
+                current_place++
+                current_score = run.score
+            }
         }
         let run_element = document.createElement("tr")
         let place = document.createElement("td")
-        place.innerText = current_place.toString()
+        if (user === null && !rankedUsers.has(run.username)) {
+            place.innerText = current_place.toString()
+            rankedUsers.add(run.username)
+        } else if (user !== null) {
+            place.innerText = current_place.toString()
+        }
         run_element.appendChild(place)
         let username = document.createElement("td")
         username.innerText = run.username
+        username.style.cursor = "pointer"
+        username.onclick = () => {
+            sessionStorage.setItem("view runs", run.username)
+            location.assign("/view-runs.html")
+        }
         run_element.appendChild(username)
         let score = document.createElement("td")
         score.innerText = run.score
@@ -48,8 +60,8 @@ window.addEventListener("load", async () => {
     for (const run of run_elements) {
         tbody.appendChild(run)
     }
-    score_table.appendChild(tbody)
-})
+    table.appendChild(tbody)
+}
 
 async function fetchRuns(username = null) {
     let body = {}
@@ -78,3 +90,5 @@ async function fetchRuns(username = null) {
             }
         })
 }
+
+export default fillTable

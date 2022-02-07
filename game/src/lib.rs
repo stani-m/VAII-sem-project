@@ -189,7 +189,7 @@ pub fn main() -> Result<(), JsValue> {
                     session_storage
                         .set_item("score", &game.score().to_string())
                         .unwrap();
-                    html_window.location().replace("/game_over.html").unwrap();
+                    html_window.location().replace("/game-over.html").unwrap();
                 }
 
                 context

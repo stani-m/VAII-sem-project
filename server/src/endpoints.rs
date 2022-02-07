@@ -1,7 +1,8 @@
 use serde::{Deserialize, Serialize};
+use sqlx::types::chrono;
 use sqlx::MySqlPool;
 
-use crate::models::{Run, User};
+use crate::models::{Message, Run, User};
 
 #[derive(Serialize)]
 struct Response<T: Serialize> {
@@ -167,4 +168,72 @@ pub async fn get_runs(mut request: tide::Request<MySqlPool>) -> tide::Result {
     }
 
     Ok(Response::ok(output_runs).into())
+}
+
+pub async fn send_message(mut request: tide::Request<MySqlPool>) -> tide::Result {
+    #[derive(Deserialize)]
+    struct Data {
+        from: User,
+        to: User,
+        text: String,
+    }
+
+    let Data { mut from, to, text } = request.body_json().await?;
+    let pool = request.state();
+
+    from.load_hash(pool).await?;
+    if !from.verify() {
+        Ok(Response::error("Invalid sender.").into())
+    } else if text.len() > 500 {
+        Ok(Response::error("Message text too long.").into())
+    } else if !to.username_in_use(pool).await? {
+        Ok(Response::error("Recipient does not exist.").into())
+    } else {
+        let message = Message::new(
+            from.id(pool).await?,
+            to.id(pool).await?,
+            chrono::Utc::now().naive_utc(),
+            text,
+        );
+        message.save(pool).await?;
+        Ok(Response::ok(()).into())
+    }
+}
+
+pub async fn get_messages(mut request: tide::Request<MySqlPool>) -> tide::Result {
+    let mut user: User = request.body_json().await?;
+    let pool = request.state();
+
+    user.load_hash(pool).await?;
+    if !user.verify() {
+        Ok(Response::error("Invalid user!").into())
+    } else {
+        #[derive(Serialize)]
+        struct OutputMessage {
+            id: u32,
+            sender: String,
+            #[serde(rename = "showSender")]
+            show_sender: bool,
+            recipient: String,
+            #[serde(rename = "showRecipient")]
+            show_recipient: bool,
+            time: String,
+            text: String,
+        }
+        let messages = user.fetch_messages(pool).await?;
+        let mut output_messages = Vec::with_capacity(messages.len());
+        for message in &messages {
+            output_messages.push(OutputMessage {
+                id: message.id(),
+                sender: message.sender_username(pool).await?,
+                show_sender: message.show_sender(),
+                recipient: message.recipient_username(pool).await?,
+                show_recipient: message.show_recipient(),
+                time: message.time().to_string(),
+                text: message.text().to_string(),
+            })
+        }
+
+        Ok(Response::ok(output_messages).into())
+    }
 }

@@ -56,7 +56,7 @@ impl User {
     pub fn verify(&self) -> bool {
         bcrypt::verify(
             self.password.as_ref().expect("Password missing!"),
-            &self.password_hash.as_ref().expect("Password missing!"),
+            &self.password_hash.as_ref().expect("Password hash missing!"),
         )
         .unwrap()
     }
@@ -117,6 +117,35 @@ impl User {
         Ok(runs)
     }
 
+    pub async fn fetch_messages(&self, pool: &MySqlPool) -> Result<Vec<Message>, sqlx::Error> {
+        let id = self.id(pool).await?;
+        let messages = sqlx::query_as!(
+            Message,
+            "SELECT * FROM messages WHERE from_user_id = ? OR to_user_id = ?",
+            id,
+            id
+        )
+            .fetch_all(pool)
+            .await?;
+        Ok(messages)
+    }
+
+    pub async fn id(&self, pool: &MySqlPool) -> Result<u32, sqlx::Error> {
+        Ok(
+            sqlx::query!("SELECT id FROM users WHERE username = ?", self.username)
+                .fetch_one(pool)
+                .await?
+                .id,
+        )
+    }
+
+    pub async fn username_from_id(id: u32, pool: &MySqlPool) -> Result<String, sqlx::Error> {
+        Ok(sqlx::query!("SELECT username FROM users WHERE id = ?", id)
+            .fetch_one(pool)
+            .await?
+            .username)
+    }
+
     pub async fn delete(&self, pool: &MySqlPool) -> Result<(), sqlx::Error> {
         sqlx::query!(
             "DELETE FROM users WHERE username = ? AND password_hash = ?",
@@ -156,7 +185,7 @@ impl Run {
 
     pub async fn fetch_all(pool: &MySqlPool) -> Result<Vec<Run>, sqlx::Error> {
         let runs = sqlx::query_as!(
-            Run,
+            Self,
             r#"SELECT id as "id?", user_id as "user_id?", score, time as "time?" FROM runs"#
         )
         .fetch_all(pool)
@@ -179,5 +208,70 @@ impl Run {
 
     pub fn time(&self) -> Option<chrono::NaiveDateTime> {
         self.time
+    }
+}
+
+pub struct Message {
+    id: u32,
+    from_user_id: u32,
+    show_sender: i8,
+    to_user_id: u32,
+    show_recipient: i8,
+    time: chrono::NaiveDateTime,
+    text: String,
+}
+
+impl Message {
+    pub fn new(from_user_id: u32, to_user_id: u32, time: chrono::NaiveDateTime, text: String) -> Message {
+        Self {
+            id: 0,
+            from_user_id,
+            show_sender: 1,
+            to_user_id,
+            show_recipient: 1,
+            time,
+            text,
+        }
+    }
+
+    pub async fn save(&self, pool: &MySqlPool) -> Result<(), sqlx::Error> {
+        sqlx::query!(
+            "INSERT INTO messages(from_user_id, to_user_id, time, text) VALUES(?, ?, ?, ?)",
+            self.from_user_id,
+            self.to_user_id,
+            self.time,
+            self.text
+        )
+        .execute(pool)
+        .await?;
+        Ok(())
+    }
+
+    pub async fn sender_username(&self, pool: &MySqlPool) -> Result<String, sqlx::Error> {
+        User::username_from_id(self.from_user_id, pool).await
+    }
+
+    pub async fn recipient_username(&self, pool: &MySqlPool) -> Result<String, sqlx::Error> {
+        User::username_from_id(self.to_user_id, pool).await
+    }
+
+    pub fn id(&self) -> u32 {
+        self.id
+    }
+
+    pub fn show_sender(&self) -> bool {
+        self.show_sender == 1
+    }
+
+    pub fn show_recipient(&self) -> bool {
+        self.show_recipient == 1
+    }
+
+    pub fn time(&self) -> chrono::NaiveDateTime {
+        self.time
+    }
+
+    pub fn text(&self) -> &str {
+        &self.text
     }
 }

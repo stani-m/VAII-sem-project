@@ -35,8 +35,8 @@ p {
 .button {
     display: block;
     padding: 0.6em;
-    border: 0.15em solid blue;
     margin: 0.8em;
+    border: 0.15em solid blue;
     background: transparent;
     cursor: pointer;
     color: blue;
@@ -44,6 +44,21 @@ p {
     text-decoration: none;
     text-transform: uppercase;
     font-weight: bold;
+}
+
+.message {
+    margin: 0.8em;
+    padding: 0.6em;
+    border: 0.15em solid blue;
+}
+
+.message p {
+    text-align: left;
+    margin: 0.5em;
+}
+
+.message .button {
+    display: inline-block;
 }
 
 .button:hover {
@@ -124,4 +139,12 @@ tbody tr:hover td {
 
 td {
     border: 0.07em solid darkcyan;
+}
+
+textarea {
+    width: 50%;
+    max-width: 95%;
+    height: 4em;
+    display: block;
+    margin: auto;
 }

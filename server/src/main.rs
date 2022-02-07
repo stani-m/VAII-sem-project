@@ -24,8 +24,11 @@ async fn main() -> tide::Result<()> {
     app.at("/delete-account").delete(endpoints::delete_account);
     app.at("/submit-run").post(endpoints::submit_run);
     app.at("/get-runs").post(endpoints::get_runs);
+    app.at("/message").post(endpoints::send_message);
+    app.at("/get-messages").post(endpoints::get_messages);
 
     app.at("/").serve_dir("../www")?;
+
     app.listen("0.0.0.0:8000").await?;
 
     Ok(())

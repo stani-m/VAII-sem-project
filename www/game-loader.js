@@ -1,7 +1,5 @@
 import {default as init} from './game.js';
 
-async function startGame() {
+window.onload = async () => {
     await init('./game_bg.wasm');
 }
-
-window.onload = startGame
