@@ -13,7 +13,7 @@ pub struct Game {
     score: u32,
     score_indicator: web_sys::HtmlSpanElement,
     buffer: Vec<u8>,
-    rng: rand::rngs::ThreadRng,
+    rng: ThreadRng,
 }
 
 impl Game {
@@ -23,7 +23,7 @@ impl Game {
         let buffer = buffers.swap_remove(0).to_vec();
         let mut cubes = Vec::with_capacity(n_cubes);
 
-        let mut rng = rand::thread_rng();
+        let mut rng = thread_rng();
         let mut y = 6.0;
         for _ in 0..n_cubes {
             let mut cube = Cube::new(&gltf, &buffer, Color::CYAN);
@@ -36,7 +36,7 @@ impl Game {
             player: Cube::new(&gltf, &buffer, Color::MAGENTA),
             player_target_x: 1,
             cubes,
-            speed: 1.0,
+            speed: 2.0,
             spawn_y: y,
             score: 0,
             score_indicator,

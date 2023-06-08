@@ -65,6 +65,8 @@ pub fn main() -> Result<(), JsValue> {
     let context = WebGLContext::new(&window.canvas())?;
     context.bind_all_objects();
 
+    window.canvas().focus().unwrap();
+
     let mut framebuffer = gfx::Framebuffer::new(
         width as usize / RESOLUTION_SCALE,
         height as usize / RESOLUTION_SCALE,
@@ -92,8 +94,6 @@ pub fn main() -> Result<(), JsValue> {
     let mut frames = 0u16;
 
     event_loop.run(move |event, _, control_flow| {
-        // *control_flow = ControlFlow::Wait;
-
         match event {
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
