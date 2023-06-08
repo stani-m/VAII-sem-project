@@ -13,11 +13,11 @@
     top: 0;
 }
 
-#fps {
+.indicators {
     color: white;
     font-family: "Mago", sans-serif;
     font-size: xx-large;
-    margin: 15px;
+    margin: 0.5em;
 }
 
 /* Font source: https://nimblebeastscollective.itch.io/magosfonts */

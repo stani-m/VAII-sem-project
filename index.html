@@ -1,27 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Wire Racer: Menu</title>
-    <link rel="stylesheet" href="general.css">
+    <title>Cube Dodger: Game</title>
+    <link rel="stylesheet" href="game.css">
+    <script type="module" src="game-loader.js"></script>
 </head>
 <body>
-<div id="outer">
-    <div id="inner">
-        <h1>Wire Racer</h1>
-        <p>
-            Wire racer is a 3D racing game with wireframe graphics that I'm working on as my semestral project for VAII.
-            All rendering is done using a software rasterizer that runs directly on your machine using WebAssembly.
-            The game is not yet finished but most of the work on the rasterizer is already done so launching the game
-            shows a demo of a spinning cube.
-        </p>
-        <div class="button_box">
-            <a class="button" href="game.html">Launch game!</a>
-            <a class="button" href="hall-of-fame.html">Hall of Fame</a>
-            <a class="button">How to play</a>
-        </div>
-    </div>
+<canvas id="render_target"></canvas>
+<div id="top_left">
+    <p class="indicators">
+        SCORE: <span id="score">0</span><br>
+        FPS: <span id="fps">60</span>
+    </p>
 </div>
 </body>
 </html>
